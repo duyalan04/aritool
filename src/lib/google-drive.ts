@@ -2,12 +2,35 @@ import { google } from 'googleapis';
 import { parseFolderStatus, getNewFolderName } from './status-helper';
 import { DriveFolder, DriveFile, FolderStatus, DriveConnectionStatus } from './types';
 
+import fs from 'fs';
+import path from 'path';
+
 // Determine if real Google Drive credentials are configured
 export function getDriveConfig() {
-  const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || 'root';
+  let serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  let clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  let privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || '1QjVV2u_aiNPriykD1ixD1_h77sb7wUPh';
+
+  // Fallback to local JSON key file if env is not populated
+  if (!serviceAccountKey && (!clientEmail || !privateKey)) {
+    try {
+      const rootDir = process.cwd();
+      const files = fs.readdirSync(rootDir);
+      const jsonKeyFile = files.find((f) => f.endsWith('.json') && (f.includes('arctic') || f.includes('service_account') || f.includes('key')));
+      if (jsonKeyFile) {
+        const fileContent = fs.readFileSync(path.join(rootDir, jsonKeyFile), 'utf-8');
+        const parsed = JSON.parse(fileContent);
+        if (parsed.type === 'service_account' && parsed.private_key && parsed.client_email) {
+          serviceAccountKey = fileContent;
+          clientEmail = parsed.client_email;
+          privateKey = parsed.private_key;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   const hasCredentials = Boolean(
     serviceAccountKey || (clientEmail && privateKey)

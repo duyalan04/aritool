@@ -16,6 +16,9 @@
 # Misc
 .DS_Store
 *.pem
+*.key
+*service_account*.json
+arctic-diode-*.json
 
 # Debug logs
 npm-debug.log*

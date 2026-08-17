@@ -15,7 +15,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
 
   if (!file) return null;
 
-  const imageSrc = file.webContentLink || file.thumbnailLink || `/api/drive/proxy-image?fileId=${file.id}`;
+  const imageSrc = `/api/drive/proxy-image?fileId=${file.id}`;
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 3));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.5));

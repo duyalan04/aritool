@@ -245,7 +245,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           imageFiles.length > 0 ? (
             <div className="images-grid">
               {imageFiles.map((img) => {
-                const src = img.webContentLink || img.thumbnailLink || `/api/drive/proxy-image?fileId=${img.id}`;
+                const src = `/api/drive/proxy-image?fileId=${img.id}`;
                 return (
                   <div
                     key={img.id}
