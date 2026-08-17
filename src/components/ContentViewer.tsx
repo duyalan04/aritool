@@ -131,7 +131,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                 title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_OK (Phím 1)'}
               >
                 <Check size={15} />
-                <span>✓ Xong (_OK)</span>
+                <span>Xong (_OK)</span>
               </button>
 
               <button
@@ -142,7 +142,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                 title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_2_3_DAY (Phím 2)'}
               >
                 <Clock size={15} />
-                <span>⏳ Chờ (_2_3_DAY)</span>
+                <span>Chờ (_2_3_DAY)</span>
               </button>
 
               <button
@@ -153,7 +153,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                 title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_KO (Phím 3)'}
               >
                 <X size={15} />
-                <span>✕ Lỗi (_KO)</span>
+                <span>Lỗi (_KO)</span>
               </button>
 
               {isProcessed && (
