@@ -4,6 +4,7 @@ import { DriveFolder, DriveFile, FolderStatus, DriveConnectionStatus } from './t
 
 import fs from 'fs';
 import path from 'path';
+import { Readable } from 'stream';
 
 // Determine if real Google Drive credentials are configured
 export function getDriveConfig() {
@@ -410,10 +411,7 @@ export async function uploadDriveFile(
     throw new Error('Chưa kết nối Google Drive');
   }
 
-  const { Readable } = await import('stream');
-  const stream = new Readable();
-  stream.push(buffer);
-  stream.push(null);
+  const stream = Readable.from(buffer);
 
   const res = await drive.files.create({
     requestBody: {
