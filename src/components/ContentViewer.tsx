@@ -297,7 +297,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
 
       {/* Tabs Navigation: Split View vs Text Only vs Images Only */}
-      <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center' }}>
         <div className="tabs-group">
           <button
             className={`tab-btn ${viewMode === 'split' ? 'active' : ''}`}
@@ -323,10 +323,6 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             <ImageIcon size={15} />
             <span>Chỉ xem Ảnh ({imageFiles.length})</span>
           </button>
-        </div>
-
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          {viewMode === 'split' && '⚡ Chế độ đối chiếu Song Song (Text & Passport)'}
         </div>
       </div>
 
