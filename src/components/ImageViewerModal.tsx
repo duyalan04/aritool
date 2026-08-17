@@ -14,7 +14,6 @@ import {
   Check, 
   Undo2, 
   RotateCcw,
-  Sparkles,
   Scissors
 } from 'lucide-react';
 import { DriveFile } from '@/lib/types';
@@ -66,6 +65,69 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
     setCopySuccess(false);
   }, [file?.id]);
 
+  // Crop Box Mouse Move Callback (must be declared before any early return)
+  const handleCropMouseMove = useCallback((e: MouseEvent) => {
+    if (!activeHandle || !containerRef.current) return;
+
+    const deltaX = e.clientX - cropDragStart.mouseX;
+    const deltaY = e.clientY - cropDragStart.mouseY;
+    const orig = cropDragStart.box;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const maxW = containerRect.width;
+    const maxH = containerRect.height;
+    const minSize = 40;
+
+    let newX = orig.x;
+    let newY = orig.y;
+    let newW = orig.width;
+    let newH = orig.height;
+
+    if (activeHandle === 'move') {
+      newX = Math.max(0, Math.min(orig.x + deltaX, maxW - orig.width));
+      newY = Math.max(0, Math.min(orig.y + deltaY, maxH - orig.height));
+    } else {
+      if (activeHandle.includes('e')) {
+        newW = Math.max(minSize, Math.min(orig.width + deltaX, maxW - orig.x));
+      }
+      if (activeHandle.includes('s')) {
+        newH = Math.max(minSize, Math.min(orig.height + deltaY, maxH - orig.y));
+      }
+      if (activeHandle.includes('w')) {
+        const potentialW = orig.width - deltaX;
+        if (potentialW >= minSize && orig.x + deltaX >= 0) {
+          newX = orig.x + deltaX;
+          newW = potentialW;
+        }
+      }
+      if (activeHandle.includes('n')) {
+        const potentialH = orig.height - deltaY;
+        if (potentialH >= minSize && orig.y + deltaY >= 0) {
+          newY = orig.y + deltaY;
+          newH = potentialH;
+        }
+      }
+    }
+
+    setCropBox({ x: newX, y: newY, width: newW, height: newH });
+  }, [activeHandle, cropDragStart]);
+
+  const handleCropMouseUp = useCallback(() => {
+    setActiveHandle(null);
+  }, []);
+
+  // Listen to window mouse events during crop drag
+  useEffect(() => {
+    if (activeHandle) {
+      window.addEventListener('mousemove', handleCropMouseMove);
+      window.addEventListener('mouseup', handleCropMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleCropMouseMove);
+        window.removeEventListener('mouseup', handleCropMouseUp);
+      };
+    }
+  }, [activeHandle, handleCropMouseMove, handleCropMouseUp]);
+
+  // ALL HOOKS ARE ABOVE THIS LINE. Early return is safe here!
   if (!file) return null;
 
   const originalSrc = `/api/drive/proxy-image?fileId=${file.id}`;
@@ -85,12 +147,10 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
   // Toggle Crop Mode
   const handleToggleCropMode = () => {
     if (!isCropMode) {
-      // Enter crop mode: reset zoom & pan to ensure full visibility of the crop box
       setZoom(1);
       setPosition({ x: 0, y: 0 });
       setIsCropMode(true);
 
-      // Initialize default centered crop box
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const boxW = Math.min(rect.width * 0.7, 360);
@@ -155,7 +215,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
     }
   };
 
-  // --- Crop Box Mouse Drag & Resize Logic ---
+  // Crop Box Mouse Down
   const handleCropMouseDown = (handle: DragHandle, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -167,67 +227,6 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
     });
   };
 
-  const handleCropMouseMove = useCallback((e: MouseEvent) => {
-    if (!activeHandle || !containerRef.current) return;
-
-    const deltaX = e.clientX - cropDragStart.mouseX;
-    const deltaY = e.clientY - cropDragStart.mouseY;
-    const orig = cropDragStart.box;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const maxW = containerRect.width;
-    const maxH = containerRect.height;
-    const minSize = 40;
-
-    let newX = orig.x;
-    let newY = orig.y;
-    let newW = orig.width;
-    let newH = orig.height;
-
-    if (activeHandle === 'move') {
-      newX = Math.max(0, Math.min(orig.x + deltaX, maxW - orig.width));
-      newY = Math.max(0, Math.min(orig.y + deltaY, maxH - orig.height));
-    } else {
-      // Resizing with 8 handles
-      if (activeHandle.includes('e')) {
-        newW = Math.max(minSize, Math.min(orig.width + deltaX, maxW - orig.x));
-      }
-      if (activeHandle.includes('s')) {
-        newH = Math.max(minSize, Math.min(orig.height + deltaY, maxH - orig.y));
-      }
-      if (activeHandle.includes('w')) {
-        const potentialW = orig.width - deltaX;
-        if (potentialW >= minSize && orig.x + deltaX >= 0) {
-          newX = orig.x + deltaX;
-          newW = potentialW;
-        }
-      }
-      if (activeHandle.includes('n')) {
-        const potentialH = orig.height - deltaY;
-        if (potentialH >= minSize && orig.y + deltaY >= 0) {
-          newY = orig.y + deltaY;
-          newH = potentialH;
-        }
-      }
-    }
-
-    setCropBox({ x: newX, y: newY, width: newW, height: newH });
-  }, [activeHandle, cropDragStart]);
-
-  const handleCropMouseUp = useCallback(() => {
-    setActiveHandle(null);
-  }, []);
-
-  useEffect(() => {
-    if (activeHandle) {
-      window.addEventListener('mousemove', handleCropMouseMove);
-      window.addEventListener('mouseup', handleCropMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleCropMouseMove);
-        window.removeEventListener('mouseup', handleCropMouseUp);
-      };
-    }
-  }, [activeHandle, handleCropMouseMove, handleCropMouseUp]);
-
   // Execute Crop to High-Resolution Canvas
   const generateCroppedCanvas = (): HTMLCanvasElement | null => {
     if (!imgRef.current || !containerRef.current) return null;
@@ -238,13 +237,11 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
     const containerRect = container.getBoundingClientRect();
     const imgRect = img.getBoundingClientRect();
 
-    // Compute image placement relative to container
     const imgLeft = imgRect.left - containerRect.left;
     const imgTop = imgRect.top - containerRect.top;
     const imgWidth = imgRect.width;
     const imgHeight = imgRect.height;
 
-    // Intersection between cropBox and displayed image
     const interLeft = Math.max(cropBox.x, imgLeft);
     const interTop = Math.max(cropBox.y, imgTop);
     const interRight = Math.min(cropBox.x + cropBox.width, imgLeft + imgWidth);
@@ -255,7 +252,6 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
       return null;
     }
 
-    // Scale factors to original natural image resolution
     const scaleX = img.naturalWidth / imgWidth;
     const scaleY = img.naturalHeight / imgHeight;
 
@@ -264,7 +260,6 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
     const cropSourceW = (interRight - interLeft) * scaleX;
     const cropSourceH = (interBottom - interTop) * scaleY;
 
-    // Create high-res canvas
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(cropSourceW);
     canvas.height = Math.round(cropSourceH);
@@ -272,33 +267,17 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    // Support rotation if rotated
-    if (rotation !== 0) {
-      // Apply rotation transformation if needed
-      ctx.drawImage(
-        img,
-        cropSourceX,
-        cropSourceY,
-        cropSourceW,
-        cropSourceH,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-    } else {
-      ctx.drawImage(
-        img,
-        cropSourceX,
-        cropSourceY,
-        cropSourceW,
-        cropSourceH,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-    }
+    ctx.drawImage(
+      img,
+      cropSourceX,
+      cropSourceY,
+      cropSourceW,
+      cropSourceH,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
     return canvas;
   };
@@ -330,7 +309,6 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
           }
         }, 'image/png');
       } else if (croppedImageSrc) {
-        // Fetch existing data URL and copy blob
         const res = await fetch(croppedImageSrc);
         const blob = await res.blob();
         await navigator.clipboard.write([
@@ -341,7 +319,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
       }
     } catch (err) {
       console.error('Copy to clipboard failed', err);
-      alert('Không thể sao chép trực tiếp vào clipboard trình duyệt. Bạn có thể nhấn Tải ảnh về máy.');
+      alert('Không thể sao chép trực tiếp vào clipboard. Bạn có thể nhấn Tải ảnh về máy.');
     }
   };
 
@@ -516,7 +494,7 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
                     }}
                     onMouseDown={(e) => handleCropMouseDown('move', e)}
                   >
-                    {/* Grid lines (rule of thirds) */}
+                    {/* Grid lines */}
                     <div style={{ position: 'absolute', top: '33.33%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.25)' }} />
                     <div style={{ position: 'absolute', top: '66.66%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.25)' }} />
                     <div style={{ position: 'absolute', left: '33.33%', top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.25)' }} />
@@ -528,13 +506,11 @@ export const ImageViewerModal: React.FC<ImageViewerModalProps> = ({ file, onClos
                     </div>
 
                     {/* 8 Resize Handles */}
-                    {/* Corners */}
                     <div className="crop-handle handle-nw" style={{ cursor: 'nwse-resize', top: -5, left: -5 }} onMouseDown={(e) => handleCropMouseDown('nw', e)} />
                     <div className="crop-handle handle-ne" style={{ cursor: 'nesw-resize', top: -5, right: -5 }} onMouseDown={(e) => handleCropMouseDown('ne', e)} />
                     <div className="crop-handle handle-se" style={{ cursor: 'nwse-resize', bottom: -5, right: -5 }} onMouseDown={(e) => handleCropMouseDown('se', e)} />
                     <div className="crop-handle handle-sw" style={{ cursor: 'nesw-resize', bottom: -5, left: -5 }} onMouseDown={(e) => handleCropMouseDown('sw', e)} />
 
-                    {/* Edges */}
                     <div className="crop-handle handle-n" style={{ cursor: 'ns-resize', top: -5, left: '50%', transform: 'translateX(-50%)' }} onMouseDown={(e) => handleCropMouseDown('n', e)} />
                     <div className="crop-handle handle-s" style={{ cursor: 'ns-resize', bottom: -5, left: '50%', transform: 'translateX(-50%)' }} onMouseDown={(e) => handleCropMouseDown('s', e)} />
                     <div className="crop-handle handle-w" style={{ cursor: 'ew-resize', left: -5, top: '50%', transform: 'translateY(-50%)' }} onMouseDown={(e) => handleCropMouseDown('w', e)} />

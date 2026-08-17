@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="ariGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#0f172a"/>
+  <path d="M7 11C7 9.89543 7.89543 9 9 9H13L15 11H23C24.1046 11 25 11.8954 25 13V21C25 22.1046 24.1046 23 23 23H9C7.89543 23 7 22.1046 7 21V11Z" fill="url(#ariGrad)"/>
+  <circle cx="16" cy="17" r="3" fill="#ffffff" fill-opacity="0.9"/>
+</svg>
