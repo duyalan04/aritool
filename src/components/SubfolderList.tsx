@@ -104,49 +104,51 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
                   className="quick-action-bar"
                   onClick={(e) => e.stopPropagation()} // Prevent card selection click
                 >
-                  {/* Button 1: DONE / _OK */}
-                  <button
-                    className={`btn-action btn-action-ok ${folder.status === 'OK' ? 'active' : ''} ${isProcessed && folder.status !== 'OK' ? 'btn-dimmed' : ''}`}
-                    onClick={() => onUpdateStatus(folder.id, 'OK')}
-                    disabled={isLoading || isProcessed}
-                    title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_OK (Phím 1)'}
-                  >
-                    <Check size={13} />
-                    <span>Done</span>
-                  </button>
+                  {!isProcessed ? (
+                    <>
+                      {/* Button 1: DONE / _OK */}
+                      <button
+                        className="btn-action btn-action-ok"
+                        onClick={() => onUpdateStatus(folder.id, 'OK')}
+                        disabled={isLoading}
+                        title="Đổi tên thành [TÊN]_OK (Phím 1)"
+                      >
+                        <Check size={13} />
+                        <span>Done</span>
+                      </button>
 
-                  {/* Button 2: 2-3 NGÀY / _2_3_DAY */}
-                  <button
-                    className={`btn-action btn-action-wait ${folder.status === '2_3_DAY' ? 'active' : ''} ${isProcessed && folder.status !== '2_3_DAY' ? 'btn-dimmed' : ''}`}
-                    onClick={() => onUpdateStatus(folder.id, '2_3_DAY')}
-                    disabled={isLoading || isProcessed}
-                    title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_2_3_DAY (Phím 2)'}
-                  >
-                    <Clock size={13} />
-                    <span>2-3 Ngày</span>
-                  </button>
+                      {/* Button 2: 2-3 NGÀY / _2_3_DAY */}
+                      <button
+                        className="btn-action btn-action-wait"
+                        onClick={() => onUpdateStatus(folder.id, '2_3_DAY')}
+                        disabled={isLoading}
+                        title="Đổi tên thành [TÊN]_2_3_DAY (Phím 2)"
+                      >
+                        <Clock size={13} />
+                        <span>2-3 Ngày</span>
+                      </button>
 
-                  {/* Button 3: KO / _KO */}
-                  <button
-                    className={`btn-action btn-action-ko ${folder.status === 'KO' ? 'active' : ''} ${isProcessed && folder.status !== 'KO' ? 'btn-dimmed' : ''}`}
-                    onClick={() => onUpdateStatus(folder.id, 'KO')}
-                    disabled={isLoading || isProcessed}
-                    title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_KO (Phím 3)'}
-                  >
-                    <X size={13} />
-                    <span>KO</span>
-                  </button>
-
-                  {/* Button 4: RESET / GỐC */}
-                  {isProcessed && (
+                      {/* Button 3: KO / _KO */}
+                      <button
+                        className="btn-action btn-action-ko"
+                        onClick={() => onUpdateStatus(folder.id, 'KO')}
+                        disabled={isLoading}
+                        title="Đổi tên thành [TÊN]_KO (Phím 3)"
+                      >
+                        <X size={13} />
+                        <span>KO</span>
+                      </button>
+                    </>
+                  ) : (
+                    /* When already processed, show 1 full-width restore button */
                     <button
-                      className="btn-action-restore-active"
+                      className="btn-action-restore-full"
                       onClick={() => onUpdateStatus(folder.id, 'NONE')}
                       disabled={isLoading}
                       title="Khôi phục tên gốc ban đầu (Bỏ đuôi trạng thái) (Phím 0)"
                     >
-                      <RotateCcw size={12} />
-                      <span>Khôi phục</span>
+                      <RotateCcw size={13} />
+                      <span>Khôi phục trạng thái gốc</span>
                     </button>
                   )}
                 </div>

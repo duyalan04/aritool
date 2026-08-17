@@ -798,6 +798,32 @@ body {
   box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
 }
 
+.btn-action-restore-full {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+.btn-action-restore-full:hover:not(:disabled) {
+  background: #2563eb;
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.45);
+  transform: translateY(-1px);
+}
+
 /* Detail & Content Viewer Column 3 */
 .viewer-panel {
   background: rgba(11, 17, 33, 0.7);
