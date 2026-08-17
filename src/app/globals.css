@@ -1284,3 +1284,21 @@ body {
     transform: rotate(360deg);
   }
 }
+
+/* Image Crop Tool Styling */
+.crop-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #38bdf8;
+  border: 1.5px solid #020617;
+  border-radius: 2px;
+  pointer-events: auto;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+  transition: transform 0.1s ease;
+}
+
+.crop-handle:hover {
+  transform: scale(1.35) !important;
+  background: #ffffff;
+}
