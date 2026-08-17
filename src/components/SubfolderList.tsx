@@ -71,6 +71,8 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
               folderIconColor = 'var(--status-ko)';
             }
 
+            const isProcessed = folder.status !== 'NONE';
+
             return (
               <div
                 key={folder.id}
@@ -104,10 +106,10 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
                 >
                   {/* Button 1: DONE / _OK */}
                   <button
-                    className={`btn-action btn-action-ok ${folder.status === 'OK' ? 'active' : ''}`}
+                    className={`btn-action btn-action-ok ${folder.status === 'OK' ? 'active' : ''} ${isProcessed && folder.status !== 'OK' ? 'btn-dimmed' : ''}`}
                     onClick={() => onUpdateStatus(folder.id, 'OK')}
-                    disabled={isLoading}
-                    title="Đổi tên thành [TÊN]_OK (Phím 1)"
+                    disabled={isLoading || isProcessed}
+                    title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_OK (Phím 1)'}
                   >
                     <Check size={13} />
                     <span>Done</span>
@@ -115,10 +117,10 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
 
                   {/* Button 2: 2-3 NGÀY / _2_3_DAY */}
                   <button
-                    className={`btn-action btn-action-wait ${folder.status === '2_3_DAY' ? 'active' : ''}`}
+                    className={`btn-action btn-action-wait ${folder.status === '2_3_DAY' ? 'active' : ''} ${isProcessed && folder.status !== '2_3_DAY' ? 'btn-dimmed' : ''}`}
                     onClick={() => onUpdateStatus(folder.id, '2_3_DAY')}
-                    disabled={isLoading}
-                    title="Đổi tên thành [TÊN]_2_3_DAY (Phím 2)"
+                    disabled={isLoading || isProcessed}
+                    title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_2_3_DAY (Phím 2)'}
                   >
                     <Clock size={13} />
                     <span>2-3 Ngày</span>
@@ -126,24 +128,25 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
 
                   {/* Button 3: KO / _KO */}
                   <button
-                    className={`btn-action btn-action-ko ${folder.status === 'KO' ? 'active' : ''}`}
+                    className={`btn-action btn-action-ko ${folder.status === 'KO' ? 'active' : ''} ${isProcessed && folder.status !== 'KO' ? 'btn-dimmed' : ''}`}
                     onClick={() => onUpdateStatus(folder.id, 'KO')}
-                    disabled={isLoading}
-                    title="Đổi tên thành [TÊN]_KO (Phím 3)"
+                    disabled={isLoading || isProcessed}
+                    title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_KO (Phím 3)'}
                   >
                     <X size={13} />
                     <span>KO</span>
                   </button>
 
                   {/* Button 4: RESET / GỐC */}
-                  {folder.status !== 'NONE' && (
+                  {isProcessed && (
                     <button
-                      className="btn-action btn-action-reset"
+                      className="btn-action-restore-active"
                       onClick={() => onUpdateStatus(folder.id, 'NONE')}
                       disabled={isLoading}
-                      title="Khôi phục tên gốc (Bỏ hậu tố) (Phím 0)"
+                      title="Khôi phục tên gốc ban đầu (Bỏ đuôi trạng thái) (Phím 0)"
                     >
                       <RotateCcw size={12} />
+                      <span>Khôi phục</span>
                     </button>
                   )}
                 </div>

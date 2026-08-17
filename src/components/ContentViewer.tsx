@@ -119,45 +119,57 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         </div>
 
         {/* Right: Quick Action Buttons directly in viewer */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            className={`btn-action btn-action-ok ${selectedFolder.status === 'OK' ? 'active' : ''}`}
-            onClick={() => onUpdateStatus(selectedFolder.id, 'OK')}
-            style={{ padding: '7px 14px', fontSize: '0.8rem' }}
-          >
-            <Check size={15} />
-            <span>✓ Xong (_OK)</span>
-          </button>
+        {(() => {
+          const isProcessed = selectedFolder.status !== 'NONE';
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                className={`btn-action btn-action-ok ${selectedFolder.status === 'OK' ? 'active' : ''} ${isProcessed && selectedFolder.status !== 'OK' ? 'btn-dimmed' : ''}`}
+                onClick={() => onUpdateStatus(selectedFolder.id, 'OK')}
+                disabled={isSaving || isProcessed}
+                style={{ padding: '7px 14px', fontSize: '0.8rem' }}
+                title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_OK (Phím 1)'}
+              >
+                <Check size={15} />
+                <span>✓ Xong (_OK)</span>
+              </button>
 
-          <button
-            className={`btn-action btn-action-wait ${selectedFolder.status === '2_3_DAY' ? 'active' : ''}`}
-            onClick={() => onUpdateStatus(selectedFolder.id, '2_3_DAY')}
-            style={{ padding: '7px 14px', fontSize: '0.8rem' }}
-          >
-            <Clock size={15} />
-            <span>⏳ Chờ (_2_3_DAY)</span>
-          </button>
+              <button
+                className={`btn-action btn-action-wait ${selectedFolder.status === '2_3_DAY' ? 'active' : ''} ${isProcessed && selectedFolder.status !== '2_3_DAY' ? 'btn-dimmed' : ''}`}
+                onClick={() => onUpdateStatus(selectedFolder.id, '2_3_DAY')}
+                disabled={isSaving || isProcessed}
+                style={{ padding: '7px 14px', fontSize: '0.8rem' }}
+                title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_2_3_DAY (Phím 2)'}
+              >
+                <Clock size={15} />
+                <span>⏳ Chờ (_2_3_DAY)</span>
+              </button>
 
-          <button
-            className={`btn-action btn-action-ko ${selectedFolder.status === 'KO' ? 'active' : ''}`}
-            onClick={() => onUpdateStatus(selectedFolder.id, 'KO')}
-            style={{ padding: '7px 14px', fontSize: '0.8rem' }}
-          >
-            <X size={15} />
-            <span>✕ Lỗi (_KO)</span>
-          </button>
+              <button
+                className={`btn-action btn-action-ko ${selectedFolder.status === 'KO' ? 'active' : ''} ${isProcessed && selectedFolder.status !== 'KO' ? 'btn-dimmed' : ''}`}
+                onClick={() => onUpdateStatus(selectedFolder.id, 'KO')}
+                disabled={isSaving || isProcessed}
+                style={{ padding: '7px 14px', fontSize: '0.8rem' }}
+                title={isProcessed ? 'Hồ sơ đã gắn trạng thái' : 'Đổi tên thành [TÊN]_KO (Phím 3)'}
+              >
+                <X size={15} />
+                <span>✕ Lỗi (_KO)</span>
+              </button>
 
-          {selectedFolder.status !== 'NONE' && (
-            <button
-              className="btn-action btn-action-reset"
-              onClick={() => onUpdateStatus(selectedFolder.id, 'NONE')}
-              title="Bỏ đuôi trạng thái, khôi phục tên gốc"
-              style={{ height: 34, width: 34 }}
-            >
-              <RotateCcw size={14} />
-            </button>
-          )}
-        </div>
+              {isProcessed && (
+                <button
+                  className="btn-action-restore-active"
+                  onClick={() => onUpdateStatus(selectedFolder.id, 'NONE')}
+                  title="Bỏ đuôi trạng thái, khôi phục tên gốc ban đầu (Phím 0)"
+                  style={{ height: 34, padding: '7px 14px', fontSize: '0.8rem' }}
+                >
+                  <RotateCcw size={14} />
+                  <span>Khôi phục gốc</span>
+                </button>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Tabs Navigation: Text File vs Images */}

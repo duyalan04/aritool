@@ -701,8 +701,17 @@ body {
   white-space: nowrap;
 }
 
-.btn-action:hover {
+.btn-action:hover:not(:disabled) {
   transform: translateY(-1px);
+}
+
+.btn-action:disabled,
+.btn-action.btn-dimmed {
+  opacity: 0.28;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.7);
+  box-shadow: none !important;
 }
 
 .btn-action-ok {
@@ -710,7 +719,7 @@ body {
   color: #34d399;
   border-color: rgba(16, 185, 129, 0.35);
 }
-.btn-action-ok:hover,
+.btn-action-ok:hover:not(:disabled),
 .btn-action-ok.active {
   background: #10b981;
   color: white;
@@ -723,7 +732,7 @@ body {
   color: #fbbf24;
   border-color: rgba(245, 158, 11, 0.35);
 }
-.btn-action-wait:hover,
+.btn-action-wait:hover:not(:disabled),
 .btn-action-wait.active {
   background: #f59e0b;
   color: white;
@@ -736,7 +745,7 @@ body {
   color: #f87171;
   border-color: rgba(239, 68, 68, 0.35);
 }
-.btn-action-ko:hover,
+.btn-action-ko:hover:not(:disabled),
 .btn-action-ko.active {
   background: #ef4444;
   color: white;
@@ -748,17 +757,45 @@ body {
   width: 32px;
   height: 32px;
   flex: none;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
-  border-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border-color: var(--border-medium);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 .btn-action-reset:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-action-restore-active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  transition: all var(--transition-fast);
+  font-family: inherit;
+  white-space: nowrap;
+}
+.btn-action-restore-active:hover {
+  background: #2563eb;
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
 }
 
 /* Detail & Content Viewer Column 3 */
