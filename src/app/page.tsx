@@ -7,8 +7,6 @@ import { SubfolderList } from '@/components/SubfolderList';
 import { ContentViewer } from '@/components/ContentViewer';
 import { SettingsModal } from '@/components/SettingsModal';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
-import { UploadBatchModal } from '@/components/UploadBatchModal';
-import { CreateSubfolderModal } from '@/components/CreateSubfolderModal';
 import { DriveFolder, DriveFile, FolderStatus, DriveConnectionStatus } from '@/lib/types';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
@@ -39,8 +37,6 @@ export default function Home() {
   // State: Modals & Loading
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
-  const [isUploadBatchOpen, setIsUploadBatchOpen] = useState<boolean>(false);
-  const [isCreateSubfolderOpen, setIsCreateSubfolderOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -348,7 +344,6 @@ export default function Home() {
           onSearchChange={setSearchQuery}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
-          onOpenUploadModal={() => setIsUploadBatchOpen(true)}
           counts={counts}
         />
 
@@ -359,7 +354,6 @@ export default function Home() {
           onSelectSubfolder={(folder) => setSelectedSubfolder(folder)}
           onUpdateStatus={handleUpdateStatus}
           loadingFolderId={loadingFolderId}
-          onOpenCreateSubfolderModal={selectedBatch ? () => setIsCreateSubfolderOpen(true) : undefined}
         />
 
         {/* Column 3: Content Viewer (Text Editor & Image Gallery) */}
@@ -391,34 +385,6 @@ export default function Home() {
           </div>
         ))}
       </div>
-
-      {/* Upload Batch Modal */}
-      <UploadBatchModal
-        isOpen={isUploadBatchOpen}
-        onClose={() => setIsUploadBatchOpen(false)}
-        onSuccess={async (newBatch) => {
-          await fetchBatches();
-          if (newBatch) {
-            setSelectedBatch(newBatch);
-            await fetchSubfolders(newBatch.id);
-          }
-          showToast(`Đã thêm bộ "${newBatch?.cleanName || 'mới'}" thành công!`, 'success');
-        }}
-      />
-
-      {/* Create Subfolder Modal */}
-      <CreateSubfolderModal
-        isOpen={isCreateSubfolderOpen}
-        onClose={() => setIsCreateSubfolderOpen(false)}
-        batchFolder={selectedBatch}
-        onSuccess={async (newSubfolder) => {
-          if (selectedBatch) {
-            await fetchSubfolders(selectedBatch.id);
-            setSelectedSubfolder(newSubfolder);
-          }
-          showToast(`Đã tạo hồ sơ "${newSubfolder.cleanName}"!`, 'success');
-        }}
-      />
 
       {/* Settings Modal */}
       <SettingsModal
