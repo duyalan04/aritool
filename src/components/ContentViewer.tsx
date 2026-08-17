@@ -9,11 +9,10 @@ import {
   Clock, 
   X, 
   RotateCcw, 
-  ExternalLink,
-  Eye,
-  Info,
-  CheckCircle2,
-  FolderOpen
+  Columns, 
+  Eye, 
+  FolderOpen,
+  ZoomIn
 } from 'lucide-react';
 import { DriveFolder, DriveFile, FolderStatus } from '@/lib/types';
 import { STATUS_CONFIG } from '@/lib/status-helper';
@@ -40,7 +39,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   isSaving,
   isLoadingFiles,
 }) => {
-  const [activeTab, setActiveTab] = useState<'text' | 'images'>('text');
+  const [viewMode, setViewMode] = useState<'split' | 'text' | 'images'>('split');
   const [selectedImageFile, setSelectedImageFile] = useState<DriveFile | null>(null);
   const [initialText, setInitialText] = useState<string>('');
   const [isDirty, setIsDirty] = useState<boolean>(false);
@@ -85,12 +84,12 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
   if (!selectedFolder) {
     return (
-      <main className="column-panel viewer-panel">
+      <main className="column-panel viewer-panel" style={{ flex: 1 }}>
         <div className="empty-state">
           <FolderOpen size={48} className="empty-state-icon" />
           <p className="empty-state-title">Chưa chọn thư mục hồ sơ</p>
           <p className="empty-state-desc">
-            Vui lòng chọn một thư mục con ở cột giữa để xem và chỉnh sửa file text (.txt) hoặc xem ảnh.
+            Vui lòng chọn một thư mục con ở cột giữa để xem và chỉnh sửa file text (.txt) hoặc đối chiếu ảnh.
           </p>
         </div>
       </main>
@@ -99,8 +98,133 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
   const statusConfig = STATUS_CONFIG[selectedFolder.status] || STATUS_CONFIG.NONE;
 
+  // Render Text Editor Component
+  const renderTextEditor = (isSplit = false) => {
+    if (!currentTextFile) {
+      return (
+        <div className="empty-state" style={{ height: '100%', background: 'rgba(15, 23, 42, 0.5)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+          <FileText size={36} className="empty-state-icon" />
+          <p className="empty-state-title">Không tìm thấy file .txt</p>
+          <p className="empty-state-desc">Thư mục này chưa có file văn bản (.txt) nào.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="editor-container" style={{ height: '100%' }}>
+        {/* Toolbar */}
+        <div className="editor-toolbar">
+          <div className="editor-file-title">
+            <FileText size={16} />
+            <span>{currentTextFile.name}</span>
+            {isDirty && <span className="dirty-tag">Chưa lưu *</span>}
+          </div>
+
+          <div className="editor-actions">
+            <button
+              className="btn-primary"
+              onClick={handleSave}
+              disabled={isSaving || !isDirty}
+              title="Lưu nội dung vào Google Drive (Ctrl+S)"
+            >
+              <Save size={15} className={isSaving ? 'spinner' : ''} />
+              <span>{isSaving ? 'Đang lưu...' : 'Lưu File (Ctrl+S)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          className="text-area-editor"
+          value={activeTextContent}
+          onChange={handleTextChange}
+          placeholder="Nội dung file text..."
+          spellCheck={false}
+        />
+
+        {/* Footer info */}
+        <div className="editor-footer">
+          <div>
+            <span>Ký tự: {activeTextContent.length}</span> |{' '}
+            <span>Dòng: {activeTextContent.split('\n').length}</span>
+          </div>
+          <div>
+            <span>{currentTextFile.modifiedTime ? new Date(currentTextFile.modifiedTime).toLocaleTimeString() : 'Vừa xong'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Images Gallery Component
+  const renderImagesGallery = (isSplit = false) => {
+    if (imageFiles.length === 0) {
+      return (
+        <div className="empty-state" style={{ height: '100%', background: 'rgba(15, 23, 42, 0.5)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+          <ImageIcon size={36} className="empty-state-icon" />
+          <p className="empty-state-title">Không có file hình ảnh</p>
+          <p className="empty-state-desc">Thư mục này không chứa file ảnh nào (.png, .jpg, .webp).</p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(15, 23, 42, 0.85)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+        <div className="editor-toolbar" style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+          <div className="editor-file-title" style={{ color: '#a78bfa' }}>
+            <ImageIcon size={16} />
+            <span>Hình ảnh Tài liệu / Passport ({imageFiles.length})</span>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            Click ảnh để phóng to & kéo chuột
+          </span>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: isSplit ? 12 : 20 }}>
+          <div 
+            className="images-grid" 
+            style={{ 
+              gridTemplateColumns: isSplit ? 'repeat(auto-fill, minmax(200px, 1fr))' : 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: isSplit ? 12 : 16 
+            }}
+          >
+            {imageFiles.map((img) => {
+              const src = `/api/drive/proxy-image?fileId=${img.id}`;
+              return (
+                <div
+                  key={img.id}
+                  className="image-card"
+                  onClick={() => setSelectedImageFile(img)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="image-preview-wrapper" style={{ height: isSplit ? 160 : 220 }}>
+                    <img src={src} alt={img.name} className="image-preview-img" loading="lazy" />
+                    <div className="image-hover-overlay">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'white', fontWeight: 600, fontSize: '0.82rem' }}>
+                        <ZoomIn size={16} /> Phóng to (Zoom)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="image-info-bar">
+                    <span className="image-filename" title={img.name}>{img.name}</span>
+                    {img.size && (
+                      <span className="image-filesize">
+                        {(img.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <main className="column-panel viewer-panel">
+    <main className="column-panel viewer-panel" style={{ flex: 1, width: '100%', minWidth: 0 }}>
       {/* Top Header Bar with Status Actions */}
       <div className="viewer-header-tabs">
         {/* Left: Folder Name & Status */}
@@ -172,126 +296,80 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         })()}
       </div>
 
-      {/* Tabs Navigation: Text File vs Images */}
-      <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.15)' }}>
+      {/* Tabs Navigation: Split View vs Text Only vs Images Only */}
+      <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="tabs-group">
           <button
-            className={`tab-btn ${activeTab === 'text' ? 'active' : ''}`}
-            onClick={() => setActiveTab('text')}
+            className={`tab-btn ${viewMode === 'split' ? 'active' : ''}`}
+            onClick={() => setViewMode('split')}
+            title="Xem cùng lúc File Text và Ảnh để đối chiếu nhanh"
           >
-            <FileText size={15} />
-            <span>File Text {currentTextFile ? `(${currentTextFile.name})` : '(0)'}</span>
+            <Columns size={15} />
+            <span>Song song (Text + Ảnh)</span>
           </button>
 
           <button
-            className={`tab-btn ${activeTab === 'images' ? 'active' : ''}`}
-            onClick={() => setActiveTab('images')}
+            className={`tab-btn ${viewMode === 'text' ? 'active' : ''}`}
+            onClick={() => setViewMode('text')}
+          >
+            <FileText size={15} />
+            <span>Chỉ xem Text {currentTextFile ? `(${currentTextFile.name})` : '(0)'}</span>
+          </button>
+
+          <button
+            className={`tab-btn ${viewMode === 'images' ? 'active' : ''}`}
+            onClick={() => setViewMode('images')}
           >
             <ImageIcon size={15} />
-            <span>Hình ảnh ({imageFiles.length})</span>
+            <span>Chỉ xem Ảnh ({imageFiles.length})</span>
           </button>
+        </div>
+
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          {viewMode === 'split' && '⚡ Chế độ đối chiếu Song Song (Text & Passport)'}
         </div>
       </div>
 
-      {/* Body Content */}
-      <div className="viewer-body">
+      {/* Body Content with 100% Space Utilization */}
+      <div className="viewer-body" style={{ flex: 1, padding: 16, overflow: 'hidden' }}>
         {isLoadingFiles ? (
           <div className="empty-state">
             <div className="spinner" style={{ width: 32, height: 32 }} />
             <p className="empty-state-title">Đang tải nội dung thư mục...</p>
           </div>
-        ) : activeTab === 'text' ? (
-          /* Text Editor Tab */
-          currentTextFile ? (
-            <div className="editor-container">
-              {/* Toolbar */}
-              <div className="editor-toolbar">
-                <div className="editor-file-title">
-                  <FileText size={16} />
-                  <span>{currentTextFile.name}</span>
-                  {isDirty && <span className="dirty-tag">Chưa lưu *</span>}
-                </div>
-
-                <div className="editor-actions">
-                  <button
-                    className="btn-primary"
-                    onClick={handleSave}
-                    disabled={isSaving || !isDirty}
-                    title="Lưu nội dung vào Google Drive (Ctrl+S)"
-                  >
-                    <Save size={15} className={isSaving ? 'spinner' : ''} />
-                    <span>{isSaving ? 'Đang lưu...' : 'Lưu File (Ctrl+S)'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Text Area */}
-              <textarea
-                className="text-area-editor"
-                value={activeTextContent}
-                onChange={handleTextChange}
-                placeholder="Nội dung file text..."
-                spellCheck={false}
-              />
-
-              {/* Footer info */}
-              <div className="editor-footer">
-                <div>
-                  <span>Ký tự: {activeTextContent.length}</span> |{' '}
-                  <span>Dòng: {activeTextContent.split('\n').length}</span>
-                </div>
-                <div>
-                  <span>Cập nhật lần cuối: {currentTextFile.modifiedTime ? new Date(currentTextFile.modifiedTime).toLocaleTimeString() : 'Vừa xong'}</span>
-                </div>
-              </div>
+        ) : viewMode === 'split' ? (
+          /* Split View: Left (Text Editor) + Right (Image Gallery) */
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: (currentTextFile && imageFiles.length > 0) ? '1fr 1fr' : '1fr', 
+              gap: 16, 
+              height: '100%', 
+              minHeight: 0 
+            }}
+          >
+            {/* Left Column: Text Editor */}
+            <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+              {renderTextEditor(true)}
             </div>
-          ) : (
-            <div className="empty-state">
-              <FileText size={36} className="empty-state-icon" />
-              <p className="empty-state-title">Không tìm thấy file .txt nào</p>
-              <p className="empty-state-desc">Thư mục này chưa có file văn bản (.txt) nào.</p>
-            </div>
-          )
+
+            {/* Right Column: Image Gallery / Passport */}
+            {imageFiles.length > 0 && (
+              <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+                {renderImagesGallery(true)}
+              </div>
+            )}
+          </div>
+        ) : viewMode === 'text' ? (
+          /* Full Width Text View */
+          <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+            {renderTextEditor(false)}
+          </div>
         ) : (
-          /* Images Tab */
-          imageFiles.length > 0 ? (
-            <div className="images-grid">
-              {imageFiles.map((img) => {
-                const src = `/api/drive/proxy-image?fileId=${img.id}`;
-                return (
-                  <div
-                    key={img.id}
-                    className="image-card"
-                    onClick={() => setSelectedImageFile(img)}
-                  >
-                    <div className="image-preview-wrapper">
-                      <img src={src} alt={img.name} className="image-preview-img" />
-                      <div className="image-hover-overlay">
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>
-                          <Eye size={16} /> Phóng to xem chi tiết
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="image-info-bar">
-                      <span className="image-filename" title={img.name}>{img.name}</span>
-                      {img.size && (
-                        <span className="image-filesize">
-                          {(img.size / (1024 * 1024)).toFixed(2)} MB
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <ImageIcon size={36} className="empty-state-icon" />
-              <p className="empty-state-title">Không có file hình ảnh</p>
-              <p className="empty-state-desc">Thư mục này không chứa file ảnh nào (.png, .jpg, .webp).</p>
-            </div>
-          )
+          /* Full Width Images View */
+          <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+            {renderImagesGallery(false)}
+          </div>
         )}
       </div>
 
