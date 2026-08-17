@@ -268,23 +268,23 @@ body {
   overflow: hidden;
 }
 
-@media (max-width: 1200px) {
-  .main-workspace {
-    grid-template-columns: 240px 320px 1fr;
-  }
+/* 3-Column Layout */
+.main-workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 65px);
 }
 
-/* Column Common Styling */
 .column-panel {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
-  border-right: 1px solid var(--border-subtle);
+  height: 100%;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--border-subtle);
 }
 
+/* Column Header & Badges */
 .column-header {
   padding: 14px 18px;
   display: flex;

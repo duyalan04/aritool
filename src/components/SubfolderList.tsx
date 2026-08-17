@@ -42,16 +42,26 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
           <Folder size={16} color="#38bdf8" />
           <span>Danh sách Hồ sơ Con</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {onOpenCreateSubfolderModal && (
             <button
               className="btn-secondary"
-              style={{ padding: '3px 8px', fontSize: '0.72rem', height: 24, borderRadius: 'var(--radius-sm)' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 9px',
+                fontSize: '0.74rem',
+                height: 26,
+                borderRadius: 'var(--radius-sm)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}
               onClick={onOpenCreateSubfolderModal}
               title="Thêm 1 hồ sơ mới vào bộ này"
             >
-              <Plus size={12} />
-              <span>+ Thêm hồ sơ</span>
+              <Plus size={13} />
+              <span>Thêm hồ sơ</span>
             </button>
           )}
           <span className="count-tag">{subfolders.length} mục</span>
