@@ -42,10 +42,12 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [loadingFolderId, setLoadingFolderId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastInfo[]>([]);
+  const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState<boolean>(true);
+  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
 
   // Toast Helper
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    const id = Math.random().toString(36).substring(2, 9);
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -64,43 +66,59 @@ export default function Home() {
   }, []);
 
   // 2. Fetch Batches (Root subfolders like "30 bộ lee")
-  const fetchBatches = useCallback(async () => {
-    setIsLoading(true);
+  const fetchBatches = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoading(true);
     try {
       const res = await fetch('/api/drive/batches');
       const data = await res.json();
       if (data.success && data.batches) {
         setBatches(data.batches);
         // Auto-select first batch if none selected
-        if (data.batches.length > 0 && !selectedBatch) {
-          setSelectedBatch(data.batches[0]);
-        }
+        setSelectedBatch((prev) => {
+          if (!prev && data.batches.length > 0) return data.batches[0];
+          // Keep current selected batch updated
+          if (prev) {
+            const found = data.batches.find((b: DriveFolder) => b.id === prev.id);
+            return found || prev;
+          }
+          return prev;
+        });
       }
     } catch (err) {
       console.error('Failed to fetch batches', err);
-      showToast('Lỗi khi tải danh sách bộ', 'error');
+      if (!isSilent) showToast('Lỗi khi tải danh sách bộ', 'error');
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
-  }, [selectedBatch, showToast]);
+  }, [showToast]);
 
-  // 3. Fetch Subfolders for Selected Batch
-  const fetchSubfolders = useCallback(async (batchId: string) => {
+  // 3. Fetch Subfolders for Selected Batch (with smooth real-time delta update)
+  const fetchSubfolders = useCallback(async (batchId: string, isSilent = false) => {
     try {
       const res = await fetch(`/api/drive/subfolders?batchId=${batchId}`);
       const data = await res.json();
       if (data.success && data.subfolders) {
-        setSubfolders(data.subfolders);
-        // Auto select first subfolder if valid
-        if (data.subfolders.length > 0) {
-          setSelectedSubfolder(data.subfolders[0]);
-        } else {
-          setSelectedSubfolder(null);
-        }
+        const newSubfolders: DriveFolder[] = data.subfolders;
+        setSubfolders((prev) => {
+          // If silent sync and no change, keep current state identity
+          const isSame = prev.length === newSubfolders.length && 
+            prev.every((item, i) => item.id === newSubfolders[i]?.id && item.status === newSubfolders[i]?.status && item.name === newSubfolders[i]?.name);
+          if (isSilent && isSame) return prev;
+          return newSubfolders;
+        });
+
+        // Update selected subfolder status seamlessly if updated on another computer
+        setSelectedSubfolder((prev) => {
+          if (!prev) return newSubfolders.length > 0 && !isSilent ? newSubfolders[0] : null;
+          const updated = newSubfolders.find((f) => f.id === prev.id);
+          return updated || prev;
+        });
+
+        setLastSyncTime(new Date());
       }
     } catch (err) {
       console.error('Failed to fetch subfolders', err);
-      showToast('Lỗi khi tải danh sách bộ con', 'error');
+      if (!isSilent) showToast('Lỗi khi tải danh sách bộ con', 'error');
     }
   }, [showToast]);
 
@@ -146,6 +164,33 @@ export default function Home() {
     }
   }, [selectedBatch, fetchSubfolders]);
 
+  // Real-time Background Auto-Sync Polling (every 6 seconds) + Window Focus Sync
+  useEffect(() => {
+    if (!isAutoSyncEnabled || !selectedBatch) return;
+
+    const intervalId = setInterval(() => {
+      // Only poll when document/tab is currently visible to save bandwidth
+      if (document.visibilityState === 'visible') {
+        fetchSubfolders(selectedBatch.id, true);
+        fetchBatches(true);
+      }
+    }, 6000);
+
+    const handleFocus = () => {
+      if (selectedBatch) {
+        fetchSubfolders(selectedBatch.id, true);
+        fetchBatches(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAutoSyncEnabled, selectedBatch, fetchSubfolders, fetchBatches]);
+
   // When selectedSubfolder changes, load files
   useEffect(() => {
     if (selectedSubfolder) {
@@ -154,7 +199,7 @@ export default function Home() {
       setFiles([]);
       setActiveTextContent('');
     }
-  }, [selectedSubfolder, fetchFiles]);
+  }, [selectedSubfolder?.id, fetchFiles]);
 
   // Handle Status Update (_OK, _2_3_DAY, _KO, NONE)
   const handleUpdateStatus = async (folderId: string, targetStatus: FolderStatus) => {
@@ -328,6 +373,15 @@ export default function Home() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         isLoading={isLoading}
+        isAutoSyncEnabled={isAutoSyncEnabled}
+        onToggleAutoSync={() => {
+          setIsAutoSyncEnabled((prev) => {
+            const next = !prev;
+            showToast(next ? 'Đã BẬT tự động đồng bộ thời gian thực (6s)' : 'Đã TẮT tự động đồng bộ', next ? 'success' : 'info');
+            return next;
+          });
+        }}
+        lastSyncTime={lastSyncTime}
       />
 
       {/* 3-Column Workspace */}

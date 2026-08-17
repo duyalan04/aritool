@@ -22,6 +22,9 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onOpenShortcuts: () => void;
   isLoading: boolean;
+  isAutoSyncEnabled?: boolean;
+  onToggleAutoSync?: () => void;
+  lastSyncTime?: Date;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,6 +36,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenShortcuts,
   isLoading,
+  isAutoSyncEnabled = true,
+  onToggleAutoSync,
+  lastSyncTime,
 }) => {
   return (
     <header className="app-header">
@@ -81,6 +87,17 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Actions & Connection Info */}
       <div className="header-actions">
+        {/* Auto-Sync Realtime Status Indicator */}
+        <div
+          className={`connection-pill ${isAutoSyncEnabled ? '' : 'error'}`}
+          onClick={onToggleAutoSync}
+          style={{ cursor: 'pointer', background: isAutoSyncEnabled ? 'rgba(56, 189, 248, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: isAutoSyncEnabled ? '#38bdf8' : '#f87171', borderColor: isAutoSyncEnabled ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}
+          title={isAutoSyncEnabled ? `Đang tự động đồng bộ thời gian thực mỗi 6s. Cập nhật lần cuối: ${lastSyncTime ? lastSyncTime.toLocaleTimeString() : 'vừa xong'}. Nhấn để Bật/Tắt.` : 'Tự động đồng bộ đang TẮT. Nhấn để BẬT lại.'}
+        >
+          <span className="pulsing-dot" style={{ backgroundColor: isAutoSyncEnabled ? '#38bdf8' : '#f87171' }} />
+          <span>{isAutoSyncEnabled ? 'Auto-Sync 6s' : 'Sync Tắt'}</span>
+        </div>
+
         {connectionStatus && (
           <div 
             className={`connection-pill ${
