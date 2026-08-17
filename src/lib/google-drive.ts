@@ -358,3 +358,90 @@ export async function renameFolder(folderId: string, targetStatus: FolderStatus,
     status: targetStatus,
   };
 }
+
+/**
+ * Create a new folder on Google Drive (Batch folder or Subfolder)
+ */
+export async function createDriveFolder(name: string, parentFolderId?: string): Promise<DriveFolder> {
+  const drive = getDriveClient();
+  const config = getDriveConfig();
+
+  if (!drive) {
+    throw new Error('Chưa kết nối Google Drive');
+  }
+
+  const parentId = parentFolderId || config.rootFolderId;
+
+  const res = await drive.files.create({
+    requestBody: {
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId],
+    },
+    fields: 'id, name, modifiedTime, createdTime',
+    supportsAllDrives: true,
+  });
+
+  const file = res.data;
+  const { cleanName, status } = parseFolderStatus(file.name || '');
+
+  return {
+    id: file.id!,
+    name: file.name || '',
+    cleanName,
+    status,
+    parentId,
+    modifiedTime: file.modifiedTime || undefined,
+  };
+}
+
+/**
+ * Upload a binary file (image or text document) to a specific Google Drive folder
+ */
+export async function uploadDriveFile(
+  folderId: string,
+  name: string,
+  mimeType: string,
+  buffer: Buffer
+): Promise<DriveFile> {
+  const drive = getDriveClient();
+
+  if (!drive) {
+    throw new Error('Chưa kết nối Google Drive');
+  }
+
+  const { Readable } = await import('stream');
+  const stream = new Readable();
+  stream.push(buffer);
+  stream.push(null);
+
+  const res = await drive.files.create({
+    requestBody: {
+      name,
+      parents: [folderId],
+    },
+    media: {
+      mimeType: mimeType || 'application/octet-stream',
+      body: stream,
+    },
+    fields: 'id, name, mimeType, size, modifiedTime, thumbnailLink, webContentLink, webViewLink',
+    supportsAllDrives: true,
+  });
+
+  const file = res.data;
+  const isImage = (file.mimeType || '').startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(name);
+  const isText = (file.mimeType || '').startsWith('text/') || /\.(txt|json|md|csv|log)$/i.test(name);
+
+  return {
+    id: file.id!,
+    name: file.name || name,
+    mimeType: file.mimeType || mimeType,
+    size: file.size ? Number(file.size) : buffer.length,
+    modifiedTime: file.modifiedTime || new Date().toISOString(),
+    thumbnailLink: `/api/drive/proxy-image?fileId=${file.id}`,
+    webContentLink: `/api/drive/proxy-image?fileId=${file.id}`,
+    webViewLink: file.webViewLink || undefined,
+    isImage,
+    isText,
+  };
+}

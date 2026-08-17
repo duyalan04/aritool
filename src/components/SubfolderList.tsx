@@ -12,7 +12,7 @@ import {
   Clock, 
   X, 
   RotateCcw,
-  Sparkles
+  Plus
 } from 'lucide-react';
 import { DriveFolder, FolderStatus } from '@/lib/types';
 import { STATUS_CONFIG } from '@/lib/status-helper';
@@ -23,6 +23,7 @@ interface SubfolderListProps {
   onSelectSubfolder: (folder: DriveFolder) => void;
   onUpdateStatus: (folderId: string, targetStatus: FolderStatus) => Promise<void>;
   loadingFolderId: string | null;
+  onOpenCreateSubfolderModal?: () => void;
 }
 
 export const SubfolderList: React.FC<SubfolderListProps> = ({
@@ -31,6 +32,7 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
   onSelectSubfolder,
   onUpdateStatus,
   loadingFolderId,
+  onOpenCreateSubfolderModal,
 }) => {
   return (
     <section className="column-panel subfolder-panel">
@@ -40,7 +42,20 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
           <Folder size={16} color="#38bdf8" />
           <span>Danh sách Hồ sơ Con</span>
         </div>
-        <span className="count-tag">{subfolders.length} mục</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {onOpenCreateSubfolderModal && (
+            <button
+              className="btn-secondary"
+              style={{ padding: '3px 8px', fontSize: '0.72rem', height: 24, borderRadius: 'var(--radius-sm)' }}
+              onClick={onOpenCreateSubfolderModal}
+              title="Thêm 1 hồ sơ mới vào bộ này"
+            >
+              <Plus size={12} />
+              <span>+ Thêm hồ sơ</span>
+            </button>
+          )}
+          <span className="count-tag">{subfolders.length} mục</span>
+        </div>
       </div>
 
       {/* Subfolder Scrollable List */}

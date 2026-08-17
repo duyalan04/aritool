@@ -4,6 +4,7 @@ import React from 'react';
 import { 
   Folder, 
   FolderOpen, 
+  FolderPlus,
   Search, 
   CheckCircle2, 
   Clock, 
@@ -22,6 +23,7 @@ interface SidebarProps {
   onSearchChange: (query: string) => void;
   statusFilter: FolderStatus | 'ALL';
   onStatusFilterChange: (status: FolderStatus | 'ALL') => void;
+  onOpenUploadModal: () => void;
   counts: {
     all: number;
     pending: number;
@@ -39,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  onOpenUploadModal,
   counts,
 }) => {
   // Calculate progress percentage
@@ -58,8 +61,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <span className="count-tag">{batches.length} bộ</span>
       </div>
 
+      {/* Action Button: Add New Batch */}
+      <div style={{ padding: '0 16px 8px 16px' }}>
+        <button
+          className="btn-primary"
+          style={{ width: '100%', padding: '9px 12px', justifyContent: 'center', fontSize: '0.82rem', borderRadius: 'var(--radius-md)' }}
+          onClick={onOpenUploadModal}
+          title="Tải lên cả thư mục Bộ từ máy tính hoặc tạo Bộ mới trên Drive"
+        >
+          <FolderPlus size={15} />
+          <span>+ Thêm Bộ Mới / Tải lên</span>
+        </button>
+      </div>
+
       {/* Search Bar */}
-      <div className="search-box-wrapper">
+      <div className="search-box-wrapper" style={{ paddingTop: 0 }}>
         <div className="search-input-group">
           <Search size={15} className="search-icon" />
           <input
