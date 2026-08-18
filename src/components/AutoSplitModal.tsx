@@ -5,24 +5,18 @@ import {
   X, 
   Sparkles, 
   FileSpreadsheet, 
-  FolderPlus, 
   Download, 
-  CloudUpload, 
   CheckCircle2, 
   AlertCircle, 
   Eye, 
   Copy, 
   Check, 
-  Layers, 
-  FileText, 
   Settings2,
   Trash2,
   ArrowRight,
-  Loader2,
-  Calendar,
-  Phone,
   User,
-  Home
+  FolderArchive,
+  Info
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { parseRawCsvText, ParsedRecord, DobFormat } from '@/lib/csv-parser';
@@ -46,7 +40,6 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  parentFolderId,
 }) => {
   const [rawText, setRawText] = useState<string>('');
   const [batchName, setBatchName] = useState<string>('40 bộ mới');
@@ -72,7 +65,7 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Handle Download ZIP
+  // Handle Download ZIP (Fast 0.1s Client-side)
   const handleDownloadZip = async () => {
     if (records.length === 0) return;
 
@@ -80,7 +73,7 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
       setIsProcessing(true);
       setErrorMessage('');
       setStatusMessage('Đang đóng gói file ZIP...');
-      setProgressPercent(10);
+      setProgressPercent(20);
 
       const zip = new JSZip();
       const rootFolder = zip.folder(batchName.trim() || 'Bo_Ho_So');
@@ -90,11 +83,11 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
         sub?.file(fileName.trim() || 'New Text Document.txt', rec.txtContent);
       });
 
-      setProgressPercent(60);
+      setProgressPercent(70);
       setStatusMessage('Đang nén dữ liệu...');
 
       const content = await zip.generateAsync({ type: 'blob' }, (metadata) => {
-        setProgressPercent(60 + Math.round(metadata.percent * 0.4));
+        setProgressPercent(70 + Math.round(metadata.percent * 0.3));
       });
 
       // Download file
@@ -108,90 +101,14 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
       URL.revokeObjectURL(url);
 
       setIsSuccess(true);
-      setStatusMessage(`Đã tải về thành công ${batchName}.zip (${records.length} thư mục con)!`);
-      setTimeout(() => setIsSuccess(false), 4000);
+      setStatusMessage(`Đã tải về thành công file ${batchName.trim() || 'Bo_Ho_So'}.zip (${records.length} thư mục có sẵn file text)!`);
+      setTimeout(() => setIsSuccess(false), 5000);
     } catch (err: any) {
       console.error('ZIP creation error:', err);
       setErrorMessage('Lỗi khi tạo file ZIP: ' + err.message);
     } finally {
       setIsProcessing(false);
       setProgressPercent(0);
-    }
-  };
-
-  // Handle Create directly on Google Drive
-  const handleCreateOnDrive = async () => {
-    if (records.length === 0) return;
-
-    try {
-      setIsProcessing(true);
-      setErrorMessage('');
-      setProgressPercent(0);
-      setStatusMessage(`1. Đang tạo thư mục Bộ: "${batchName}" trên Google Drive...`);
-
-      // 1. Create root batch folder
-      const batchRes = await fetch('/api/drive/create-folder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: batchName.trim() || 'Bộ Hồ Sơ Mới',
-          parentId: parentFolderId,
-        }),
-      });
-
-      const batchData = await batchRes.json();
-      if (!batchData.success || !batchData.folder) {
-        throw new Error(batchData.error || 'Không thể tạo thư mục Bộ');
-      }
-
-      const createdBatch: DriveFolder = batchData.folder;
-      const total = records.length;
-
-      // 2. Create subfolders
-      for (let i = 0; i < total; i++) {
-        const rec = records[i];
-        setStatusMessage(`2. Đang tạo hồ sơ (${i + 1}/${total}): "${rec.folderName}"...`);
-
-        // Create subfolder
-        const subRes = await fetch('/api/drive/create-folder', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: rec.folderName,
-            parentId: createdBatch.id,
-          }),
-        });
-
-        const subData = await subRes.json();
-        if (subData.success && subData.folder) {
-          // Upload New Text Document.txt
-          const formData = new FormData();
-          formData.append('folderId', subData.folder.id);
-          formData.append('fileName', fileName.trim() || 'New Text Document.txt');
-          formData.append('file', new Blob([rec.txtContent], { type: 'text/plain' }), fileName.trim() || 'New Text Document.txt');
-
-          await fetch('/api/drive/upload-file', {
-            method: 'POST',
-            body: formData,
-          });
-        }
-
-        const pct = Math.round(((i + 1) / total) * 100);
-        setProgressPercent(pct);
-      }
-
-      setIsSuccess(true);
-      setStatusMessage(`Đã tạo thành công Bộ "${createdBatch.name}" với ${total} hồ sơ trên Google Drive!`);
-      
-      setTimeout(() => {
-        onSuccess(createdBatch);
-        onClose();
-      }, 1500);
-    } catch (err: any) {
-      console.error('Drive create error:', err);
-      setErrorMessage('Lỗi khi tạo trên Google Drive: ' + err.message);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -255,7 +172,7 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
             style={{ flex: 1, justifyContent: 'center', borderRadius: 0, padding: '12px', fontSize: '0.85rem' }}
           >
             <Download size={16} />
-            <span>3. Xuất Thư Mục / File ZIP</span>
+            <span>3. Tải về Trọn Bộ (.zip)</span>
           </button>
         </div>
 
@@ -406,7 +323,7 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
                     <span>{isCopied ? 'Đã sao chép tất cả!' : 'Copy toàn bộ nội dung text'}</span>
                   </button>
                   <button className="btn-primary" style={{ padding: '5px 14px', fontSize: '0.78rem' }} onClick={() => setActiveTab('export')}>
-                    <span>Tiếp tục Xuất thư mục ➔</span>
+                    <span>Tiếp tục Tải về trọn bộ ➔</span>
                   </button>
                 </div>
               </div>
@@ -494,98 +411,47 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
                   onChange={(e) => setBatchName(e.target.value)}
                   placeholder="Ví dụ: 40 bộ AZ, 30 bộ lee..."
                 />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                  Tên này sẽ là tên thư mục gốc chứa {records.length} thư mục con bên trong.
-                </span>
               </div>
 
-              {/* Export Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 20 }}>
+              {/* Guide Box */}
+              <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 'var(--radius-md)', padding: '14px 16px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <Info size={20} color="#38bdf8" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#38bdf8' }}>Quy trình tạo bộ chuẩn và nhanh nhất:</strong>
+                  <br />
+                  Vì bạn đang lưu trữ trên <strong>Google Drive cá nhân (gói 5TB)</strong>, tài khoản robot chỉ có quyền quản lý và sửa file. Bạn chỉ cần nhấn nút <strong>"Tải về File ZIP"</strong> bên dưới:
+                  <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                    <li>File zip tải về ngay trong <strong>0.1 giây</strong>, chứa sẵn đầy đủ <strong>{records.length} thư mục con</strong> và từng file <code>{fileName}</code> chuẩn.</li>
+                    <li>Bạn giải nén ra máy tính, thả ảnh passport vào và <strong>kéo thả cả thư mục lên Google Drive</strong> (sử dụng 5TB của bạn).</li>
+                    <li>Tool trên web sẽ <strong>tự động nhận diện đầy đủ cả thư mục, file text và ảnh ngay lập tức</strong>!</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Export Action Card */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(59, 130, 246, 0.05))', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: 'var(--radius-lg)', padding: 24, textAlign: 'center' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.15)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', marginBottom: 12 }}>
+                  <FolderArchive size={30} />
+                </div>
                 
-                {/* Option 1: Download ZIP (Recommended) */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: 'var(--radius-lg)', padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
-                        <Download size={22} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                          Tải về File ZIP (.zip)
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
-                          Khuyên dùng • Nhanh 0.1s
-                        </div>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 16 }}>
-                      Tự động nén thành 1 file zip chứa sẵn **{records.length} thư mục con**, mỗi thư mục đã có file `{fileName}`. Bạn giải nén ra thả ảnh vào và kéo thả lên Google Drive cực nhanh!
-                    </p>
-                  </div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  Tải về Trọn Bộ "{batchName}" ({records.length} hồ sơ)
+                </h3>
+                
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: 500, margin: '0 auto 20px auto' }}>
+                  Đã tạo sẵn cấu trúc thư mục con và file text định dạng <code>{fileName}</code> cho từng người.
+                </p>
 
-                  <button
-                    className="btn-primary"
-                    style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '0.88rem' }}
-                    onClick={handleDownloadZip}
-                    disabled={isProcessing}
-                  >
-                    <Download size={16} />
-                    <span>Tải về {batchName}.zip</span>
-                  </button>
-                </div>
-
-                {/* Option 2: Create on Google Drive */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-lg)', padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
-                        <CloudUpload size={22} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                          Tạo Trực tiếp lên Google Drive
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          Tạo tự động trên ARI
-                        </div>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 16 }}>
-                      Hệ thống sẽ tự động gọi API tạo Bộ "{batchName}" và tạo {records.length} thư mục con kèm file text lên Google Drive.
-                    </p>
-                  </div>
-
-                  <button
-                    className="btn-secondary"
-                    style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '0.88rem' }}
-                    onClick={handleCreateOnDrive}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? <Loader2 size={16} className="spinner" /> : <CloudUpload size={16} />}
-                    <span>Tạo lên Google Drive</span>
-                  </button>
-                </div>
+                <button
+                  className="btn-primary"
+                  style={{ padding: '14px 36px', fontSize: '0.95rem', fontWeight: 700, background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#020617', margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: 8, borderRadius: 'var(--radius-md)', boxShadow: '0 4px 16px rgba(56, 189, 248, 0.3)' }}
+                  onClick={handleDownloadZip}
+                  disabled={isProcessing}
+                >
+                  <Download size={18} />
+                  <span>Tải về File ZIP (.zip) ngay</span>
+                </button>
               </div>
-
-              {/* Progress Bar (during creation) */}
-              {isProcessing && (
-                <div style={{ marginTop: 16, padding: 14, background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                    <span>{statusMessage}</span>
-                    <span style={{ fontWeight: 700, color: '#38bdf8' }}>{progressPercent}%</span>
-                  </div>
-                  <div style={{ width: '100%', height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div 
-                      style={{ 
-                        width: `${progressPercent}%`, 
-                        height: '100%', 
-                        background: 'linear-gradient(90deg, #38bdf8, #3b82f6)', 
-                        transition: 'width 0.2s ease',
-                      }} 
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
