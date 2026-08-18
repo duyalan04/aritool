@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { updateFolderPresence } from '@/lib/google-drive';
 
 interface ViewerSession {
   deviceId: string;
@@ -8,8 +9,7 @@ interface ViewerSession {
   lastSeen: number;
 }
 
-// In-memory presence store (persists across requests in runtime)
-// Key: deviceId -> ViewerSession
+// In-memory presence store (for instant local response)
 declare global {
   // eslint-disable-next-line no-var
   var __ariPresenceStore: Map<string, ViewerSession> | undefined;
@@ -21,11 +21,14 @@ if (!global.__ariPresenceStore) {
 
 const presenceStore = global.__ariPresenceStore;
 
-// Clean up stale sessions (older than 10 seconds) using forEach
 function cleanupStaleSessions() {
   const now = Date.now();
   presenceStore.forEach((session, key) => {
-    if (now - session.lastSeen > 10000) {
+    if (now - session.lastSeen > 12000) {
+      // Async clean on drive if needed
+      if (session.folderId) {
+        updateFolderPresence(session.folderId, '', '', 'leave').catch(() => {});
+      }
       presenceStore.delete(key);
     }
   });
@@ -40,7 +43,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const batchId = searchParams.get('batchId');
 
-    // Group active viewers by folderId
     const activeFolders: Record<string, { deviceId: string; deviceName: string; lastSeen: number }[]> = {};
 
     presenceStore.forEach((session) => {
@@ -76,32 +78,46 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { deviceId, deviceName, folderId, batchId, action } = body;
+    const { deviceId, deviceName, folderId, batchId, action, previousFolderId } = body;
 
     if (!deviceId) {
       return NextResponse.json({ success: false, error: 'Thiếu deviceId' }, { status: 400 });
     }
 
     const sessionKey = `${deviceId}`;
+    const name = deviceName || `Máy ${deviceId.slice(0, 4)}`;
+
+    // Clean previous folder on Drive if switched
+    if (previousFolderId && previousFolderId !== folderId) {
+      updateFolderPresence(previousFolderId, '', '', 'leave').catch(() => {});
+    }
 
     if (action === 'leave' || !folderId) {
+      const existing = presenceStore.get(sessionKey);
+      if (existing?.folderId) {
+        updateFolderPresence(existing.folderId, '', '', 'leave').catch(() => {});
+      }
       presenceStore.delete(sessionKey);
       cleanupStaleSessions();
       return NextResponse.json({ success: true, message: 'Left session' });
     }
 
-    // Update session heartbeat
+    // Update in-memory session
     presenceStore.set(sessionKey, {
       deviceId,
-      deviceName: deviceName || `Máy ${deviceId.slice(0, 4)}`,
+      deviceName: name,
       folderId,
       batchId,
       lastSeen: Date.now(),
     });
 
+    // Update Google Drive folder properties asynchronously
+    updateFolderPresence(folderId, name, deviceId, 'heartbeat').catch((err) => {
+      console.warn('Drive presence sync note:', err.message);
+    });
+
     cleanupStaleSessions();
 
-    // Return current active folders
     const activeFolders: Record<string, { deviceId: string; deviceName: string; lastSeen: number }[]> = {};
     presenceStore.forEach((session) => {
       if (!activeFolders[session.folderId]) {

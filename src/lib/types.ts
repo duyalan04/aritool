@@ -11,6 +11,9 @@ export interface DriveFolder {
   hasImages?: boolean;
   hasTxt?: boolean;
   childrenCount?: number;
+  activeWorker?: string;
+  activeWorkerId?: string;
+  activeAt?: number;
 }
 
 export interface DriveFile {

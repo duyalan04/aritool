@@ -62,11 +62,18 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
             const isLoading = loadingFolderId === folder.id;
             const statusConfig = STATUS_CONFIG[folder.status] || STATUS_CONFIG.NONE;
 
-            // Check if other devices are viewing/working on this folder
-            const otherViewers = (activeViewersMap[folder.id] || []).filter(
+            // Check if other devices are viewing/working on this folder (Dual source: Memory Presence + Drive Properties)
+            const memoryViewers = (activeViewersMap[folder.id] || []).filter(
               (v) => v.deviceId !== currentDeviceId
             );
-            const isBeingWorkedOn = otherViewers.length > 0;
+            const isMemoryActive = memoryViewers.length > 0;
+            const isDriveActive = Boolean(folder.activeWorkerId && folder.activeWorkerId !== currentDeviceId);
+
+            const otherWorkerName = isMemoryActive
+              ? memoryViewers.map((v) => v.deviceName).join(', ')
+              : (isDriveActive ? folder.activeWorker : null);
+
+            const isBeingWorkedOn = Boolean(otherWorkerName);
 
             // Choose icon according to status
             let FolderIcon = Folder;
@@ -114,11 +121,11 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
                 {isBeingWorkedOn && (
                   <div 
                     className="presence-in-progress-tag" 
-                    title={`Hồ sơ này đang được mở bởi: ${otherViewers.map((v) => v.deviceName).join(', ')}`}
+                    title={`Hồ sơ này đang được mở bởi: ${otherWorkerName}`}
                   >
                     <span className="presence-pulse-dot" />
                     <span>
-                      ⚡ Đang làm: {otherViewers.map((v) => v.deviceName).join(', ')}
+                      ⚡ Đang làm: {otherWorkerName}
                     </span>
                   </div>
                 )}

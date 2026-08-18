@@ -193,7 +193,7 @@ export async function listSubfolders(batchFolderId: string): Promise<DriveFolder
 
   const res = await drive.files.list({
     q: query,
-    fields: 'files(id, name, modifiedTime, createdTime)',
+    fields: 'files(id, name, modifiedTime, createdTime, properties)',
     orderBy: 'name',
     pageSize: 200,
     supportsAllDrives: true,
@@ -201,8 +201,14 @@ export async function listSubfolders(batchFolderId: string): Promise<DriveFolder
   });
 
   const files = res.data.files || [];
+  const now = Date.now();
+
   return files.map((file) => {
     const { cleanName, status } = parseFolderStatus(file.name || '');
+    const props = file.properties || {};
+    const activeAt = props.active_at ? parseInt(props.active_at, 10) : undefined;
+    const isRecentlyActive = Boolean(activeAt && (now - activeAt < 18000));
+
     return {
       id: file.id!,
       name: file.name || '',
@@ -210,7 +216,35 @@ export async function listSubfolders(batchFolderId: string): Promise<DriveFolder
       status,
       parentId: batchFolderId,
       modifiedTime: file.modifiedTime || undefined,
+      activeWorker: isRecentlyActive ? (props.active_worker || undefined) : undefined,
+      activeWorkerId: isRecentlyActive ? (props.active_worker_id || undefined) : undefined,
+      activeAt: isRecentlyActive ? activeAt : undefined,
     };
+  });
+}
+
+/**
+ * Update active worker presence on a Google Drive folder (Native Google Drive sync)
+ */
+export async function updateFolderPresence(
+  folderId: string,
+  workerName: string,
+  workerId: string,
+  action: 'heartbeat' | 'leave' = 'heartbeat'
+): Promise<void> {
+  const drive = getDriveClient();
+  if (!drive || !folderId) return;
+
+  const properties = action === 'leave'
+    ? { active_worker: '', active_worker_id: '', active_at: '' }
+    : { active_worker: workerName, active_worker_id: workerId, active_at: Date.now().toString() };
+
+  await drive.files.update({
+    fileId: folderId,
+    requestBody: {
+      properties,
+    },
+    supportsAllDrives: true,
   });
 }
 
