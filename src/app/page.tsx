@@ -53,6 +53,8 @@ export default function Home() {
   const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState<boolean>(true);
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
 
+  const prevFolderIdRef = React.useRef<string | null>(null);
+
   // Initialize Persistent Device Identity
   useEffect(() => {
     let id = localStorage.getItem('ari_device_id');
@@ -70,9 +72,12 @@ export default function Home() {
     setDeviceName(name);
   }, []);
 
-  // Heartbeat Presence Pulse (every 3 seconds)
+  // Heartbeat Presence Pulse (every 3.5 seconds - Continues even when tab is in background)
   useEffect(() => {
     if (!deviceId) return;
+
+    const currentFolderId = selectedSubfolder?.id || null;
+    const prevFolderId = prevFolderIdRef.current;
 
     const sendHeartbeat = async () => {
       try {
@@ -82,8 +87,9 @@ export default function Home() {
           body: JSON.stringify({
             deviceId,
             deviceName,
-            folderId: selectedSubfolder?.id || null,
+            folderId: currentFolderId,
             batchId: selectedBatch?.id || null,
+            previousFolderId: prevFolderId !== currentFolderId ? prevFolderId : null,
           }),
         });
         const data = await res.json();
@@ -97,17 +103,12 @@ export default function Home() {
     };
 
     sendHeartbeat();
-    const interval = setInterval(sendHeartbeat, 3000);
+    prevFolderIdRef.current = currentFolderId;
 
-    // Leave on unload
-    const handleUnload = () => {
-      navigator.sendBeacon('/api/presence', JSON.stringify({ deviceId, action: 'leave' }));
-    };
-    window.addEventListener('beforeunload', handleUnload);
+    const interval = setInterval(sendHeartbeat, 3500);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('beforeunload', handleUnload);
     };
   }, [deviceId, deviceName, selectedSubfolder?.id, selectedBatch?.id]);
 

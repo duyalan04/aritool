@@ -21,11 +21,11 @@ if (!global.__ariPresenceStore) {
 
 const presenceStore = global.__ariPresenceStore;
 
+// Keep presence active for up to 4 hours (14,400,000 ms) so tab switching won't drop it
 function cleanupStaleSessions() {
   const now = Date.now();
   presenceStore.forEach((session, key) => {
-    if (now - session.lastSeen > 12000) {
-      // Async clean on drive if needed
+    if (now - session.lastSeen > 14400000) {
       if (session.folderId) {
         updateFolderPresence(session.folderId, '', '', 'leave').catch(() => {});
       }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const sessionKey = `${deviceId}`;
     const name = deviceName || `Máy ${deviceId.slice(0, 4)}`;
 
-    // Clean previous folder on Drive if switched
+    // Clean previous folder on Drive if switched to a different folder
     if (previousFolderId && previousFolderId !== folderId) {
       updateFolderPresence(previousFolderId, '', '', 'leave').catch(() => {});
     }

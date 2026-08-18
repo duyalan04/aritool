@@ -207,7 +207,10 @@ export async function listSubfolders(batchFolderId: string): Promise<DriveFolder
     const { cleanName, status } = parseFolderStatus(file.name || '');
     const props = file.properties || {};
     const activeAt = props.active_at ? parseInt(props.active_at, 10) : undefined;
-    const isRecentlyActive = Boolean(activeAt && (now - activeAt < 18000));
+    
+    // Persistent Lock: Khóa giữ liên tục 4 tiếng cho đến khi người dùng chuyển sang người khác hoặc bấm Done/2-3 ngày/KO
+    const isUnprocessed = status === 'NONE';
+    const isRecentlyActive = isUnprocessed && Boolean(activeAt && (now - activeAt < 14400000) && props.active_worker);
 
     return {
       id: file.id!,
@@ -376,11 +379,16 @@ export async function renameFolder(folderId: string, targetStatus: FolderStatus,
     cleanName = result.cleanName;
   }
 
-  // 2. Patch file with new name on Google Drive
+  // 2. Patch file with new name on Google Drive and clear in-progress lock
   await drive.files.update({
     fileId: folderId,
     requestBody: {
       name: newName,
+      properties: {
+        active_worker: '',
+        active_worker_id: '',
+        active_at: '',
+      },
     },
     supportsAllDrives: true,
   });
