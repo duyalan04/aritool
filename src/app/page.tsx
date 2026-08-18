@@ -182,11 +182,11 @@ export default function Home() {
           return newSubfolders;
         });
 
-        // Update selected subfolder status seamlessly if updated on another computer
+        // Update selected subfolder status seamlessly if updated on another computer (Do not auto-select first item)
         setSelectedSubfolder((prev) => {
-          if (!prev) return newSubfolders.length > 0 && !isSilent ? newSubfolders[0] : null;
+          if (!prev) return null;
           const updated = newSubfolders.find((f) => f.id === prev.id);
-          return updated || prev;
+          return updated || null;
         });
 
         setLastSyncTime(new Date());
@@ -471,6 +471,8 @@ export default function Home() {
           onSelectBatch={(batch) => {
             setSelectedBatch(batch);
             setSelectedSubfolder(null);
+            setFiles([]);
+            setActiveTextContent('');
           }}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
