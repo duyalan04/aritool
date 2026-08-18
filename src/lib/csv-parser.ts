@@ -66,7 +66,7 @@ export function generateTxtContent(
 
   const lines: string[] = [];
 
-  // Line 1: NAME  ADDRESS
+  // Line 1: NAME  ADDRESS CITY STATE ZIP
   if (record.name && addressLine) {
     lines.push(`${record.name}  ${addressLine}`);
   } else if (record.name) {
@@ -140,12 +140,12 @@ export function parseRawCsvText(
     return result;
   };
 
-  const headerCells = splitLine(firstLine).map((h) => h.toUpperCase());
+  const headerCells = splitLine(firstLine).map((h) => h.trim().toUpperCase());
   
   // Check if first line is a header
   const isHeader = headerCells.some((h) =>
     ['SSN', 'NAME', 'DOB', 'ADDRESS', 'CITY', 'STATE', 'ZIP', 'PHONES', 'EMAIL', 'TÊN'].some((kw) =>
-      h.includes(kw)
+      h === kw || h.startsWith(kw) || h.includes('(' + kw)
     )
   );
 
@@ -164,15 +164,27 @@ export function parseRawCsvText(
   if (isHeader) {
     startIndex = 1;
     headerCells.forEach((header, idx) => {
-      if (header.includes('NAME') || header.includes('TÊN') || header === 'FULLNAME') nameIdx = idx;
-      else if (header.includes('SSN') || header.includes('SOCIAL')) ssnIdx = idx;
-      else if (header.includes('DOB') || header.includes('BIRTH') || header.includes('NGÀY SINH')) dobIdx = idx;
-      else if (header.includes('ADDR') || header.includes('STREET') || header.includes('ĐỊA CHỈ')) addrIdx = idx;
-      else if (header.includes('CITY')) cityIdx = idx;
-      else if (header.includes('STATE')) stateIdx = idx;
-      else if (header.includes('ZIP') || header.includes('POSTAL')) zipIdx = idx;
-      else if (header.includes('PHONE') || header.includes('SĐT') || header.includes('TEL')) phoneIdx = idx;
-      else if (header.includes('EMAIL')) emailIdx = idx;
+      if (header === 'NAME' || header === 'FULLNAME' || header === 'FULL_NAME' || header === 'TÊN' || header === 'CUSTOMER_NAME') {
+        nameIdx = idx;
+      } else if ((header.includes('NAME') || header.includes('TÊN')) && !header.includes('BASE') && !header.includes('FILE') && !header.includes('USER') && nameIdx === -1) {
+        nameIdx = idx;
+      } else if (header.includes('SSN') || header.includes('SOCIAL')) {
+        ssnIdx = idx;
+      } else if (header.includes('DOB') || header.includes('BIRTH') || header.includes('NGÀY SINH')) {
+        dobIdx = idx;
+      } else if (header.includes('ADDR') || header.includes('STREET') || header.includes('ĐỊA CHỈ')) {
+        addrIdx = idx;
+      } else if (header.includes('CITY') || header.includes('THÀNH PHỐ')) {
+        cityIdx = idx;
+      } else if (header.includes('STATE') || header.includes('BANG')) {
+        stateIdx = idx;
+      } else if (header.includes('ZIP') || header.includes('POSTAL')) {
+        zipIdx = idx;
+      } else if (header.includes('PHONE') || header.includes('SĐT') || header.includes('TEL')) {
+        phoneIdx = idx;
+      } else if (header.includes('EMAIL')) {
+        emailIdx = idx;
+      }
     });
   } else {
     // Standard default mapping: SSN=0, NAME=1, DOB=2, ADDRESS=3, CITY=4, STATE=5, ZIP=6

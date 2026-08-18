@@ -412,41 +412,42 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
               </div>
 
               {/* Table Container */}
-              <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.2)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+              <div style={{ maxHeight: '440px', overflowY: 'auto', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.3)' }}>
+                <table className="split-preview-table">
                   <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid var(--border-subtle)', position: 'sticky', top: 0, zIndex: 5 }}>
-                      <th style={{ padding: '10px 12px', width: 40, color: 'var(--text-muted)' }}>#</th>
-                      <th style={{ padding: '10px 12px', color: '#38bdf8' }}>Tên Thư Mục (Folder)</th>
-                      <th style={{ padding: '10px 12px', color: '#fbbf24' }}>SSN</th>
-                      <th style={{ padding: '10px 12px', color: '#34d399' }}>Ngày sinh</th>
-                      <th style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>Địa chỉ</th>
-                      <th style={{ padding: '10px 12px', width: 100, textAlign: 'center' }}>Xem .txt</th>
+                    <tr>
+                      <th style={{ width: 40, color: 'var(--text-muted)' }}>#</th>
+                      <th style={{ color: '#38bdf8' }}>Tên Thư Mục (Folder)</th>
+                      <th style={{ color: '#fbbf24' }}>SSN</th>
+                      <th style={{ color: '#34d399' }}>Ngày sinh</th>
+                      <th style={{ color: 'var(--text-secondary)' }}>Địa chỉ</th>
+                      <th style={{ color: '#a78bfa' }}>Điện thoại</th>
+                      <th style={{ width: 80, textAlign: 'center' }}>Xem .txt</th>
                     </tr>
                   </thead>
                   <tbody>
                     {records.map((rec, idx) => (
                       <tr 
                         key={rec.id}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' }}
-                        className="subfolder-card"
+                        className="split-preview-row"
                       >
-                        <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <User size={13} color="#38bdf8" />
+                            <User size={14} color="#38bdf8" />
                             {rec.folderName}
                           </span>
                         </td>
-                        <td style={{ padding: '8px 12px', fontFamily: 'JetBrains Mono', color: '#fbbf24' }}>{rec.ssn || 'N/A'}</td>
-                        <td style={{ padding: '8px 12px', color: '#34d399' }}>{rec.dob || 'N/A'}</td>
-                        <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <td style={{ fontFamily: 'JetBrains Mono', color: '#fbbf24' }}>{rec.ssn || 'N/A'}</td>
+                        <td style={{ color: '#34d399' }}>{rec.dob || 'N/A'}</td>
+                        <td style={{ color: 'var(--text-secondary)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {rec.address} {rec.city} {rec.state} {rec.zip}
                         </td>
-                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                        <td style={{ color: '#a78bfa', fontFamily: 'JetBrains Mono' }}>{rec.phone || 'N/A'}</td>
+                        <td style={{ textAlign: 'center' }}>
                           <button
                             className="btn-secondary"
-                            style={{ padding: '3px 8px', fontSize: '0.7rem' }}
+                            style={{ padding: '3px 10px', fontSize: '0.72rem' }}
                             onClick={() => setSelectedRecordForPreview(rec)}
                           >
                             <Eye size={12} />

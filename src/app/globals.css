@@ -1302,3 +1302,34 @@ body {
   transform: scale(1.35) !important;
   background: #ffffff;
 }
+
+/* Auto Split Preview Table */
+.split-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.split-preview-table th {
+  padding: 10px 14px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-medium);
+  background: rgba(15, 23, 42, 0.95);
+  white-space: nowrap;
+}
+
+.split-preview-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.split-preview-row {
+  transition: background 0.15s ease;
+}
+
+.split-preview-row:hover {
+  background: rgba(56, 189, 248, 0.06);
+}
