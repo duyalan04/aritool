@@ -7,6 +7,7 @@ import { SubfolderList } from '@/components/SubfolderList';
 import { ContentViewer } from '@/components/ContentViewer';
 import { SettingsModal } from '@/components/SettingsModal';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
+import { AutoSplitModal } from '@/components/AutoSplitModal';
 import { DriveFolder, DriveFile, FolderStatus, DriveConnectionStatus } from '@/lib/types';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
@@ -37,6 +38,7 @@ export default function Home() {
   // State: Modals & Loading
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isAutoSplitOpen, setIsAutoSplitOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -399,6 +401,7 @@ export default function Home() {
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           counts={counts}
+          onOpenAutoSplit={() => setIsAutoSplitOpen(true)}
         />
 
         {/* Column 2: Subfolder List with 1-Click Status Buttons */}
@@ -439,6 +442,20 @@ export default function Home() {
           </div>
         ))}
       </div>
+
+      {/* Auto Split CSV/Text Modal */}
+      <AutoSplitModal
+        isOpen={isAutoSplitOpen}
+        onClose={() => setIsAutoSplitOpen(false)}
+        onSuccess={async (createdBatch) => {
+          await fetchBatches();
+          if (createdBatch) {
+            setSelectedBatch(createdBatch);
+            await fetchSubfolders(createdBatch.id);
+          }
+          showToast('Đã tạo thành công bộ hồ sơ mới!', 'success');
+        }}
+      />
 
       {/* Settings Modal */}
       <SettingsModal

@@ -11,7 +11,8 @@ import {
   XCircle, 
   HelpCircle,
   Layers,
-  Filter
+  Filter,
+  Sparkles
 } from 'lucide-react';
 import { DriveFolder, FolderStatus } from '@/lib/types';
 
@@ -30,6 +31,7 @@ interface SidebarProps {
     twoThreeDay: number;
     ko: number;
   };
+  onOpenAutoSplit?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -41,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   statusFilter,
   onStatusFilterChange,
   counts,
+  onOpenAutoSplit,
 }) => {
   // Calculate progress percentage
   const total = counts.all || 1;
@@ -58,6 +61,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <span className="count-tag">{batches.length} bộ</span>
       </div>
+
+      {/* Auto-Split CSV / Text Button */}
+      {onOpenAutoSplit && (
+        <div style={{ padding: '10px 16px 4px 16px' }}>
+          <button
+            className="btn-primary"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              justifyContent: 'center',
+              fontSize: '0.8rem',
+              gap: 6,
+              background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+              color: '#020617',
+              fontWeight: 700,
+              borderRadius: 'var(--radius-md)',
+            }}
+            onClick={onOpenAutoSplit}
+            title="Dán danh sách CSV/Text để tự động phân tách thành từng thư mục hồ sơ"
+          >
+            <Sparkles size={15} />
+            <span>⚡ Tự động tách CSV / Text</span>
+          </button>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="search-box-wrapper">
