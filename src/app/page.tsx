@@ -8,7 +8,7 @@ import { ContentViewer } from '@/components/ContentViewer';
 import { SettingsModal } from '@/components/SettingsModal';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import { AutoSplitModal } from '@/components/AutoSplitModal';
-import { DriveFolder, DriveFile, FolderStatus, DriveConnectionStatus } from '@/lib/types';
+import { DriveFolder, DriveFile, FolderStatus, DriveConnectionStatus, ActiveViewer } from '@/lib/types';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 interface ToastInfo {
@@ -26,6 +26,12 @@ export default function Home() {
   // State: Subfolders & Selection
   const [subfolders, setSubfolders] = useState<DriveFolder[]>([]);
   const [selectedSubfolder, setSelectedSubfolder] = useState<DriveFolder | null>(null);
+
+  // State: Presence & Multi-device Sync
+  const [deviceId, setDeviceId] = useState<string>('');
+  const [deviceName, setDeviceName] = useState<string>('Máy 1');
+  const [activeViewersMap, setActiveViewersMap] = useState<Record<string, ActiveViewer[]>>({});
+  const [totalActiveUsers, setTotalActiveUsers] = useState<number>(1);
 
   // State: Files & Editor
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -46,6 +52,72 @@ export default function Home() {
   const [toasts, setToasts] = useState<ToastInfo[]>([]);
   const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState<boolean>(true);
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+
+  // Initialize Persistent Device Identity
+  useEffect(() => {
+    let id = localStorage.getItem('ari_device_id');
+    if (!id) {
+      id = 'dev_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('ari_device_id', id);
+    }
+    setDeviceId(id);
+
+    let name = localStorage.getItem('ari_device_name');
+    if (!name) {
+      name = 'Máy ' + Math.floor(100 + Math.random() * 900);
+      localStorage.setItem('ari_device_name', name);
+    }
+    setDeviceName(name);
+  }, []);
+
+  // Heartbeat Presence Pulse (every 3 seconds)
+  useEffect(() => {
+    if (!deviceId) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        const res = await fetch('/api/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deviceId,
+            deviceName,
+            folderId: selectedSubfolder?.id || null,
+            batchId: selectedBatch?.id || null,
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.activeFolders) {
+          setActiveViewersMap(data.activeFolders);
+          setTotalActiveUsers(data.totalActiveUsers || 1);
+        }
+      } catch {
+        // silent presence failure
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 3000);
+
+    // Leave on unload
+    const handleUnload = () => {
+      navigator.sendBeacon('/api/presence', JSON.stringify({ deviceId, action: 'leave' }));
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [deviceId, deviceName, selectedSubfolder?.id, selectedBatch?.id]);
+
+  const handleRenameDevice = () => {
+    const newName = prompt('Nhập tên hiển thị cho máy tính này (để phân biệt với các máy khác):', deviceName);
+    if (newName && newName.trim()) {
+      setDeviceName(newName.trim());
+      localStorage.setItem('ari_device_name', newName.trim());
+    }
+  };
 
   // Toast Helper
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -384,6 +456,9 @@ export default function Home() {
           });
         }}
         lastSyncTime={lastSyncTime}
+        deviceName={deviceName}
+        onRenameDevice={handleRenameDevice}
+        totalActiveUsers={totalActiveUsers}
       />
 
       {/* 3-Column Workspace */}
@@ -404,13 +479,15 @@ export default function Home() {
           onOpenAutoSplit={() => setIsAutoSplitOpen(true)}
         />
 
-        {/* Column 2: Subfolder List with 1-Click Status Buttons */}
+        {/* Column 2: Subfolder List with 1-Click Status Buttons & Realtime Presence */}
         <SubfolderList
           subfolders={filteredSubfolders}
           selectedSubfolder={selectedSubfolder}
           onSelectSubfolder={(folder) => setSelectedSubfolder(folder)}
           onUpdateStatus={handleUpdateStatus}
           loadingFolderId={loadingFolderId}
+          activeViewersMap={activeViewersMap}
+          currentDeviceId={deviceId}
         />
 
         {/* Column 3: Content Viewer (Text Editor & Image Gallery) */}

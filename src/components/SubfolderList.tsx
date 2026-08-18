@@ -14,7 +14,7 @@ import {
   RotateCcw,
   Plus
 } from 'lucide-react';
-import { DriveFolder, FolderStatus } from '@/lib/types';
+import { DriveFolder, FolderStatus, ActiveViewer } from '@/lib/types';
 import { STATUS_CONFIG } from '@/lib/status-helper';
 
 interface SubfolderListProps {
@@ -24,6 +24,8 @@ interface SubfolderListProps {
   onUpdateStatus: (folderId: string, targetStatus: FolderStatus) => Promise<void>;
   loadingFolderId: string | null;
   onOpenCreateSubfolderModal?: () => void;
+  activeViewersMap?: Record<string, ActiveViewer[]>;
+  currentDeviceId?: string;
 }
 
 export const SubfolderList: React.FC<SubfolderListProps> = ({
@@ -32,6 +34,8 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
   onSelectSubfolder,
   onUpdateStatus,
   loadingFolderId,
+  activeViewersMap = {},
+  currentDeviceId,
 }) => {
   return (
     <section className="column-panel subfolder-panel">
@@ -58,6 +62,12 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
             const isLoading = loadingFolderId === folder.id;
             const statusConfig = STATUS_CONFIG[folder.status] || STATUS_CONFIG.NONE;
 
+            // Check if other devices are viewing/working on this folder
+            const otherViewers = (activeViewersMap[folder.id] || []).filter(
+              (v) => v.deviceId !== currentDeviceId
+            );
+            const isBeingWorkedOn = otherViewers.length > 0;
+
             // Choose icon according to status
             let FolderIcon = Folder;
             let folderIconColor = '#94a3b8';
@@ -77,7 +87,7 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
             return (
               <div
                 key={folder.id}
-                className={`subfolder-card ${isSelected ? 'selected' : ''}`}
+                className={`subfolder-card ${isSelected ? 'selected' : ''} ${isBeingWorkedOn ? 'is-being-worked-on' : ''}`}
                 onClick={() => onSelectSubfolder(folder)}
               >
                 {/* Top Row: Name, Clean Name, Status Badge */}
@@ -99,6 +109,19 @@ export const SubfolderList: React.FC<SubfolderListProps> = ({
                     {statusConfig.badgeText}
                   </span>
                 </div>
+
+                {/* Live Presence Indicator (If another computer is working on this) */}
+                {isBeingWorkedOn && (
+                  <div 
+                    className="presence-in-progress-tag" 
+                    title={`Hồ sơ này đang được mở bởi: ${otherViewers.map((v) => v.deviceName).join(', ')}`}
+                  >
+                    <span className="presence-pulse-dot" />
+                    <span>
+                      ⚡ Đang làm: {otherViewers.map((v) => v.deviceName).join(', ')}
+                    </span>
+                  </div>
+                )}
 
                 {/* Quick 1-Click Action Buttons */}
                 <div 

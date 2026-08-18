@@ -72,3 +72,10 @@ export interface DriveConnectionStatus {
   accountEmail?: string;
   error?: string;
 }
+
+export interface ActiveViewer {
+  deviceId: string;
+  deviceName: string;
+  lastSeen: number;
+}
+

@@ -25,6 +25,9 @@ interface HeaderProps {
   isAutoSyncEnabled?: boolean;
   onToggleAutoSync?: () => void;
   lastSyncTime?: Date;
+  deviceName?: string;
+  onRenameDevice?: () => void;
+  totalActiveUsers?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,6 +42,9 @@ export const Header: React.FC<HeaderProps> = ({
   isAutoSyncEnabled = true,
   onToggleAutoSync,
   lastSyncTime,
+  deviceName = 'Máy của bạn',
+  onRenameDevice,
+  totalActiveUsers = 1,
 }) => {
   return (
     <header className="app-header">
@@ -87,6 +93,20 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Actions & Connection Info */}
       <div className="header-actions">
+        {/* Device Name Pill (Click to rename) */}
+        <button
+          className="device-badge-btn"
+          onClick={onRenameDevice}
+          title="Nhấn để đổi tên máy hiển thị cho đồng nghiệp (ví dụ: Máy 1, Máy 2, Duy, Huy...)"
+        >
+          <span>💻 {deviceName}</span>
+          {totalActiveUsers > 1 && (
+            <span style={{ background: 'rgba(56, 189, 248, 0.25)', color: '#38bdf8', padding: '1px 6px', borderRadius: 10, fontSize: '0.7rem' }}>
+              👥 {totalActiveUsers} online
+            </span>
+          )}
+        </button>
+
         {/* Auto-Sync Realtime Status Indicator */}
         <div
           className={`connection-pill ${isAutoSyncEnabled ? '' : 'error'}`}
