@@ -93,6 +93,26 @@ export function generateTxtContent(
   return lines.join('\n');
 }
 
+function isKeyValueLine(line: string): boolean {
+  return /\b(FIRST_NAME|LAST_NAME|MIDDLE_NAME|DOB|SSN|STREET_ADDRESS|PHONE_1|CITY|STATE|ZIP|FULL_NAME|CUSTOMER_NAME)\s*:/i.test(line);
+}
+
+function parseKeyValueLine(line: string): Record<string, string> {
+  const pairs: Record<string, string> = {};
+  const parts = line.split('|');
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const colonIdx = trimmed.indexOf(':');
+    if (colonIdx > 0) {
+      const key = trimmed.substring(0, colonIdx).trim().toUpperCase().replace(/[\s-]/g, '_');
+      const val = trimmed.substring(colonIdx + 1).trim();
+      pairs[key] = val;
+    }
+  }
+  return pairs;
+}
+
 export function parseRawCsvText(
   rawText: string,
   dobFormat: DobFormat = 'M/D/YYYY',
@@ -106,6 +126,65 @@ export function parseRawCsvText(
     .filter(Boolean);
 
   if (rawLines.length === 0) return [];
+
+  const records: ParsedRecord[] = [];
+
+  // Check if dataset is primarily Key-Value formatted (e.g. FIRST_NAME: ... | LAST_NAME: ...)
+  const isKvMode = rawLines.some((l) => isKeyValueLine(l));
+
+  if (isKvMode) {
+    let rowIndex = 0;
+    for (const line of rawLines) {
+      if (!isKeyValueLine(line)) continue;
+      
+      const kv = parseKeyValueLine(line);
+      const firstName = kv['FIRST_NAME'] || kv['FIRSTNAME'] || kv['FNAME'] || '';
+      const middleName = kv['MIDDLE_NAME'] || kv['MIDDLENAME'] || kv['MNAME'] || kv['MIDDLE'] || '';
+      const lastName = kv['LAST_NAME'] || kv['LASTNAME'] || kv['LNAME'] || kv['SURNAME'] || '';
+      const suffix = kv['NAME_SUFFIX'] || kv['SUFFIX'] || '';
+
+      let name = [firstName, middleName, lastName, suffix].filter(Boolean).join(' ');
+      if (!name) {
+        name = kv['NAME'] || kv['FULL_NAME'] || kv['FULLNAME'] || kv['CUSTOMER_NAME'] || kv['ALTERNATIVE_NAME_1'] || kv['ALT_NAME'] || '';
+      }
+
+      const ssn = kv['SSN'] || kv['SOCIAL_SECURITY'] || kv['SOCIAL'] || '';
+      const dob = kv['DOB'] || kv['DATE_OF_BIRTH'] || kv['BIRTH_DATE'] || kv['BIRTHDATE'] || kv['BIRTH'] || kv['NGAY_SINH'] || kv['ALTERNATIVE_DOB_1'] || '';
+      const address = kv['STREET_ADDRESS'] || kv['STREET'] || kv['ADDRESS'] || kv['ADDR'] || '';
+      const city = kv['CITY'] || kv['TOWN'] || '';
+      const state = kv['STATE'] || kv['BANG'] || kv['PROVINCE'] || '';
+      const zip = kv['ZIP'] || kv['ZIP_CODE'] || kv['ZIPCODE'] || kv['POSTAL'] || kv['POSTAL_CODE'] || '';
+      const phone = kv['PHONE_1'] || kv['PHONE'] || kv['PHONES'] || kv['PHONE_2'] || kv['MOBILE'] || kv['CELL'] || kv['TEL'] || kv['SDT'] || '';
+      const email = kv['EMAIL'] || kv['EMAIL_ADDRESS'] || '';
+
+      rowIndex++;
+      const cleanFolderName = (name || `Hồ sơ ${rowIndex}`).replace(/[\\/:*?"<>|]/g, '').trim();
+
+      const txtContent = generateTxtContent(
+        { name, address, city, state, zip, dob, ssn, phone },
+        dobFormat,
+        includePhone
+      );
+
+      records.push({
+        id: `row_kv_${rowIndex}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        folderName: cleanFolderName,
+        name,
+        ssn,
+        dob,
+        address,
+        city,
+        state,
+        zip,
+        phone,
+        email,
+        rawLine: line,
+        txtContent,
+      });
+    }
+
+    return records;
+  }
 
   // Detect delimiter in header/first line (comma, tab, pipe, semicolon)
   const firstLine = rawLines[0];
@@ -199,8 +278,6 @@ export function parseRawCsvText(
     emailIdx = 10;
   }
 
-  const records: ParsedRecord[] = [];
-
   for (let i = startIndex; i < rawLines.length; i++) {
     const line = rawLines[i];
     const cells = splitLine(line);
@@ -241,7 +318,7 @@ export function parseRawCsvText(
     );
 
     records.push({
-      id: `row_${i}_${Date.now()}`,
+      id: `row_${i}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       folderName: cleanFolderName,
       name,
       ssn,

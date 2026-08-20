@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -42,7 +42,8 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
   onSuccess,
 }) => {
   const [rawText, setRawText] = useState<string>('');
-  const [batchName, setBatchName] = useState<string>('40 bộ mới');
+  const [batchName, setBatchName] = useState<string>('Bộ hồ sơ mới');
+  const [isBatchNameCustom, setIsBatchNameCustom] = useState<boolean>(false);
   const [dobFormat, setDobFormat] = useState<DobFormat>('M/D/YYYY');
   const [includePhone, setIncludePhone] = useState<boolean>(true);
   const [fileName, setFileName] = useState<string>('New Text Document.txt');
@@ -62,6 +63,17 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
   const records = useMemo(() => {
     return parseRawCsvText(rawText, dobFormat, includePhone);
   }, [rawText, dobFormat, includePhone]);
+
+  // Auto-sync batchName with actual record count unless user typed custom name
+  useEffect(() => {
+    if (!isBatchNameCustom) {
+      if (records.length > 0) {
+        setBatchName(`${records.length} bộ mới`);
+      } else {
+        setBatchName('Bộ hồ sơ mới');
+      }
+    }
+  }, [records.length, isBatchNameCustom]);
 
   if (!isOpen) return null;
 
@@ -204,7 +216,10 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
                     type="button" 
                     className="btn-secondary" 
                     style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                    onClick={() => setRawText(SAMPLE_CSV)}
+                    onClick={() => {
+                      setRawText(SAMPLE_CSV);
+                      setIsBatchNameCustom(false);
+                    }}
                   >
                     Dán mẫu thử
                   </button>
@@ -213,7 +228,10 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
                       type="button" 
                       className="btn-secondary" 
                       style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#f87171' }}
-                      onClick={() => setRawText('')}
+                      onClick={() => {
+                        setRawText('');
+                        setIsBatchNameCustom(false);
+                      }}
                     >
                       <Trash2 size={13} /> Xóa trắng
                     </button>
@@ -408,8 +426,11 @@ export const AutoSplitModal: React.FC<AutoSplitModalProps> = ({
                   className="search-input"
                   style={{ width: '100%', padding: '10px 14px', fontSize: '0.92rem' }}
                   value={batchName}
-                  onChange={(e) => setBatchName(e.target.value)}
-                  placeholder="Ví dụ: 40 bộ AZ, 30 bộ lee..."
+                  onChange={(e) => {
+                    setBatchName(e.target.value);
+                    setIsBatchNameCustom(true);
+                  }}
+                  placeholder={records.length > 0 ? `Ví dụ: ${records.length} bộ AZ, ${records.length} bộ mới...` : 'Ví dụ: 40 bộ AZ...'}
                 />
               </div>
 
